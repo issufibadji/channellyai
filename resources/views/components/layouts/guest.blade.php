@@ -12,9 +12,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-gray-100 text-gray-900 antialiased">
+<body class="bg-surface text-text-primary antialiased">
     <div class="min-h-screen flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-white rounded-xl shadow-sm p-8">
+        <div class="w-full max-w-md bg-surface-card border border-surface-border rounded-xl p-8">
+            <x-flash-messages />
+
             {{ $slot }}
         </div>
     </div>

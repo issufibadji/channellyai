@@ -67,4 +67,17 @@ class LoginTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_inactive_users_cannot_authenticate(): void
+    {
+        $user = User::factory()->create(['active' => false]);
+
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'password')
+            ->call('login')
+            ->assertHasErrors('email');
+
+        $this->assertGuest();
+    }
 }

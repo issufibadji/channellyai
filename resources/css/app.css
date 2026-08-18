@@ -8,6 +8,25 @@
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
     --font-mono: 'Kode Mono', ui-monospace, monospace;
+
+    /* Base (dark theme) */
+    --color-surface: oklch(14% 0.02 260);
+    --color-surface-card: oklch(19% 0.03 258);
+    --color-surface-border: oklch(28% 0.02 258);
+
+    /* Texto */
+    --color-text-primary: oklch(97% 0 0);
+    --color-text-secondary: oklch(65% 0.02 258);
+
+    /* Acento (ativo, botões, gráficos) */
+    --color-primary: oklch(62% 0.20 250);
+    --color-primary-dark: oklch(52% 0.20 250);
+    --color-accent: oklch(78% 0.13 200);
+
+    /* Estado */
+    --color-success: oklch(70% 0.18 145);
+    --color-warning: oklch(80% 0.15 85);
+    --color-danger: oklch(60% 0.22 25);
 }
 
 body {

@@ -88,4 +88,32 @@ class TwoFactorTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_user_required_to_have_two_factor_is_forced_to_configure_it(): void
+    {
+        $user = User::factory()->create(['requires_2fa' => true]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertRedirect(route('settings.two-factor'));
+    }
+
+    public function test_requires_2fa_no_longer_forces_setup_once_confirmed(): void
+    {
+        $google2fa = new Google2FA();
+        $secret = $google2fa->generateSecretKey();
+
+        $user = User::factory()->create(['requires_2fa' => true]);
+        $user->forceFill([
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $this->actingAs($user);
+        session(['2fa_passed' => true]);
+
+        $response = $this->get(route('dashboard'));
+
+        $response->assertStatus(200);
+    }
 }

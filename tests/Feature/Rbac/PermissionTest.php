@@ -3,6 +3,7 @@
 namespace Tests\Feature\Rbac;
 
 use App\Models\User;
+use Database\Seeders\MenuSideBarSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,6 +17,7 @@ class PermissionTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+        $this->seed(MenuSideBarSeeder::class);
     }
 
     public function test_user_without_permission_gets_403(): void

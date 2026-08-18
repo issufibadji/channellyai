@@ -33,12 +33,20 @@ class AttemptLoginAction
             ]);
         }
 
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (! $user->active) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Esta conta está desativada.',
+            ]);
+        }
+
         RateLimiter::clear($throttleKey);
 
         session()->regenerate();
-
-        /** @var User $user */
-        $user = Auth::user();
 
         return $user;
     }

@@ -16,6 +16,11 @@ class CheckTwoFactor
             return redirect()->route('two-factor.challenge');
         }
 
+        if ($user && $user->requires_2fa && ! $user->two_factor_confirmed_at) {
+            return redirect()->route('settings.two-factor')
+                ->with('warning', 'Sua conta exige verificação em duas etapas. Configure para continuar.');
+        }
+
         return $next($request);
     }
 }

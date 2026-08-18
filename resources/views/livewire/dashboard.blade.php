@@ -1,22 +1,18 @@
-<div class="p-6">
-    <h1 class="text-2xl font-semibold">Dashboard</h1>
-    <p class="text-sm text-gray-600 mt-2">Bem-vindo, {{ auth()->user()->name }}.</p>
+<div>
+    <h1 class="text-2xl font-semibold text-text-primary mb-6">Dashboard</h1>
 
-    <div class="mt-6">
-        @can('view-users')
-            <a href="{{ route('admin.users.index') }}" class="text-sm text-blue-600 hover:underline">
-                Usuários
-            </a>
-            ·
-        @endcan
+    <x-card>
+        <p class="text-sm text-text-secondary">Bem-vindo, {{ auth()->user()->name }}.</p>
+    </x-card>
 
-        <a href="{{ route('settings.two-factor') }}" class="text-sm text-blue-600 hover:underline">
-            Verificação em duas etapas
-        </a>
-        ·
-        <form method="POST" action="{{ route('logout') }}" class="inline">
-            @csrf
-            <button type="submit" class="text-sm text-blue-600 hover:underline">Sair</button>
-        </form>
-    </div>
+    <x-card title="Notificações recentes" class="mt-6">
+        @forelse ($recentNotifications as $notification)
+            <div class="py-2 {{ !$loop->last ? 'border-b border-surface-border' : '' }}">
+                <p class="text-sm text-text-primary font-medium">{{ $notification->data['title'] ?? 'Notificação' }}</p>
+                <p class="text-xs text-text-secondary">{{ $notification->data['message'] ?? '' }} · {{ $notification->created_at->diffForHumans() }}</p>
+            </div>
+        @empty
+            <p class="text-sm text-text-secondary">Nenhuma notificação registrada.</p>
+        @endforelse
+    </x-card>
 </div>
