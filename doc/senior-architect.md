@@ -392,7 +392,7 @@ php artisan view:clear && php artisan route:clear
 
 ## Pontos Críticos de Arquitetura
 
-1. **Middleware order** obrigatório: `auth → Check2FA → CheckEmailVerification`
+1. **Middleware order** obrigatório: `auth → verified → check2fa` (ver `02-core.md`)
 2. **UUID em vez de auto-increment** no model `User` — `$user->id` é string UUID
 3. **Service Providers** ficam em `app/Providers/` e são registrados em `bootstrap/providers.php` (Laravel 13) — não duplicar registros
 4. **Livewire** — componentes seguem a convenção de namespace `App\Livewire\*`; alias manual só quando necessário
