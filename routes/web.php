@@ -12,3 +12,4 @@ Route::get('dashboard', Dashboard::class)
     ->name('dashboard');
 
 require __DIR__.'/auth.php';
+require __DIR__.'/admin.php';

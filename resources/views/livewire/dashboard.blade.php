@@ -3,6 +3,13 @@
     <p class="text-sm text-gray-600 mt-2">Bem-vindo, {{ auth()->user()->name }}.</p>
 
     <div class="mt-6">
+        @can('view-users')
+            <a href="{{ route('admin.users.index') }}" class="text-sm text-blue-600 hover:underline">
+                Usuários
+            </a>
+            ·
+        @endcan
+
         <a href="{{ route('settings.two-factor') }}" class="text-sm text-blue-600 hover:underline">
             Verificação em duas etapas
         </a>
