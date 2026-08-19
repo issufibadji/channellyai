@@ -28,4 +28,10 @@ class MenuSideBar extends Model implements AuditableContract
     {
         return $query->whereNull('parent_id')->orderBy('order');
     }
+
+    public function hasValidIcon(): bool
+    {
+        return (bool) $this->icon
+            && file_exists(base_path("vendor/blade-ui-kit/blade-heroicons/resources/svg/o-{$this->icon}.svg"));
+    }
 }

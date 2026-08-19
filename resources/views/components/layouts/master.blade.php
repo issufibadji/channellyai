@@ -26,7 +26,7 @@
 
         <main class="flex-1 min-w-0 overflow-x-hidden">
             <div
-                class="flex justify-end items-center gap-2 px-6 py-3 border-b border-surface-border bg-surface-card/40 backdrop-blur"
+                class="sticky top-0 z-30 flex justify-end items-center gap-2 px-6 py-3 border-b border-surface-border bg-surface-card/40 backdrop-blur"
                 x-data="{ light: document.documentElement.classList.contains('light') }"
             >
                 <button

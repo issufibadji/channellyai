@@ -16,7 +16,7 @@ class MenuSideBarManager extends Component
     #[Validate('required|string|max:255')]
     public string $label = '';
 
-    #[Validate('nullable|string|max:100')]
+    #[Validate('nullable|string|max:100|regex:/^[a-z0-9-]*$/')]
     public string $icon = '';
 
     #[Validate('required|string|max:255')]
@@ -58,6 +58,12 @@ class MenuSideBarManager extends Component
             return;
         }
 
+        if ($this->icon && ! file_exists(base_path("vendor/blade-ui-kit/blade-heroicons/resources/svg/o-{$this->icon}.svg"))) {
+            $this->addError('icon', 'Esse ícone não existe no conjunto Heroicons (outline). Veja https://heroicons.com para os nomes válidos.');
+
+            return;
+        }
+
         MenuSideBar::updateOrCreate(
             ['id' => $this->menuId],
             [
@@ -70,6 +76,7 @@ class MenuSideBarManager extends Component
         );
 
         $this->dispatch('close-modal');
+        $this->dispatch('menu-updated');
         session()->flash('success', 'Item de menu salvo com sucesso.');
     }
 
@@ -77,6 +84,7 @@ class MenuSideBarManager extends Component
     {
         MenuSideBar::findOrFail($id)->delete();
 
+        $this->dispatch('menu-updated');
         session()->flash('success', 'Item de menu removido.');
     }
 

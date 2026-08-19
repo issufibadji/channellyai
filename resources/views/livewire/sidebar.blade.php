@@ -15,7 +15,7 @@
                         type="button"
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:bg-surface-border/60 hover:text-text-primary transition"
                     >
-                        @if ($item->icon)
+                        @if ($item->hasValidIcon())
                             <x-icon :name="'heroicon-o-'.$item->icon" class="w-5 h-5 shrink-0" />
                         @endif
                         <span class="flex-1 text-left">{{ $item->label }}</span>
