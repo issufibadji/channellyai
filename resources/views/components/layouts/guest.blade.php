@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? config('app.name') }}</title>
+    <title>{{ $title ?? config_app('app_name', config('app.name')) }}</title>
 
     <script>
         if (localStorage.getItem('theme') === 'light') {
@@ -23,10 +23,14 @@
         <div class="glow-border w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 bg-surface-card border border-surface-border rounded-2xl overflow-hidden">
             <div class="p-8 sm:p-10 flex flex-col justify-center">
                 <div class="flex items-center gap-3 mb-8">
-                    <div class="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30">
-                        <x-heroicon-s-sparkles class="w-5 h-5 text-white" />
+                    <div class="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 overflow-hidden">
+                        @if ($logoUrl = config_app_media('app_logo'))
+                            <img src="{{ $logoUrl }}" class="w-full h-full object-cover" alt="Logo">
+                        @else
+                            <x-heroicon-s-sparkles class="w-5 h-5 text-white" />
+                        @endif
                     </div>
-                    <span class="text-lg font-semibold text-text-primary">{{ config('app.name') }}</span>
+                    <span class="text-lg font-semibold text-text-primary">{{ config_app('app_name', config('app.name')) }}</span>
                 </div>
 
                 <x-flash-messages />
@@ -51,7 +55,7 @@
                 </div>
 
                 <p class="relative text-white/60 text-sm">
-                    &copy; {{ date('Y') }} {{ config('app.name') }}. Todos os direitos reservados.
+                    &copy; {{ date('Y') }} {{ config_app('app_name', config('app.name')) }}. Todos os direitos reservados.
                 </p>
             </div>
         </div>

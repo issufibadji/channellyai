@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="vapid-key" content="{{ config('webpush.vapid.public_key') }}">
-    <title>{{ $title ?? config('app.name') }}</title>
+    <title>{{ $title ?? config_app('app_name', config('app.name')) }}</title>
 
     <script>
         if (localStorage.getItem('theme') === 'light') {

@@ -16,6 +16,8 @@
             <div class="w-16 h-16 rounded-full overflow-hidden bg-primary/15 flex items-center justify-center shrink-0">
                 @if ($avatarUrl)
                     <img src="{{ $avatarUrl }}" class="w-full h-full object-cover" alt="Avatar">
+                @elseif ($defaultAvatarUrl = config_app_media('default_user_avatar'))
+                    <img src="{{ $defaultAvatarUrl }}" class="w-full h-full object-cover" alt="Avatar">
                 @else
                     <span class="text-xl font-semibold text-accent">{{ strtoupper(substr($name ?: 'U', 0, 1)) }}</span>
                 @endif

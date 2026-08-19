@@ -61,13 +61,13 @@ class TwoFactorSettings extends Component
             return null;
         }
 
-        $otpauthUrl = (new Google2FA())->getQRCodeUrl(
-            config('app.name'),
+        $otpauthUrl = (new Google2FA)->getQRCodeUrl(
+            config_app('app_name', config('app.name')),
             $user->email,
             $user->two_factor_secret,
         );
 
-        $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd());
+        $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd);
 
         return (new Writer($renderer))->writeString($otpauthUrl);
     }

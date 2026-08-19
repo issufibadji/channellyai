@@ -8,3 +8,10 @@ if (! function_exists('config_app')) {
         return app(AppConfigService::class)->get($key, $default);
     }
 }
+
+if (! function_exists('config_app_media')) {
+    function config_app_media(string $key): ?string
+    {
+        return app(AppConfigService::class)->getMediaUrl($key);
+    }
+}

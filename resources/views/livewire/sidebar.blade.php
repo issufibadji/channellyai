@@ -4,10 +4,14 @@
     class="shrink-0 bg-surface-card/70 backdrop-blur border-r border-surface-border flex flex-col h-screen sticky top-0 transition-all duration-200"
 >
     <div class="px-5 py-5 flex items-center gap-3" x-bind:class="collapsed && 'justify-center px-0'">
-        <div class="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 shrink-0">
-            <x-heroicon-s-sparkles class="w-5 h-5 text-white" />
+        <div class="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 shrink-0 overflow-hidden">
+            @if ($logoUrl = config_app_media('app_logo'))
+                <img src="{{ $logoUrl }}" class="w-full h-full object-cover" alt="Logo">
+            @else
+                <x-heroicon-s-sparkles class="w-5 h-5 text-white" />
+            @endif
         </div>
-        <span x-show="!collapsed" x-cloak class="text-lg font-semibold text-text-primary whitespace-nowrap">{{ config('app.name') }}</span>
+        <span x-show="!collapsed" x-cloak class="text-lg font-semibold text-text-primary whitespace-nowrap">{{ config_app('app_name', config('app.name')) }}</span>
     </div>
 
     <nav class="flex-1 overflow-y-auto px-3 space-y-1">
@@ -89,6 +93,8 @@
             <div class="w-8 h-8 rounded-full overflow-hidden bg-linear-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-semibold shrink-0">
                 @if (auth()->user()->avatar_path)
                     <img src="{{ asset('storage/'.auth()->user()->avatar_path) }}" class="w-full h-full object-cover" alt="Avatar">
+                @elseif ($defaultAvatarUrl = config_app_media('default_user_avatar'))
+                    <img src="{{ $defaultAvatarUrl }}" class="w-full h-full object-cover" alt="Avatar">
                 @else
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 @endif
