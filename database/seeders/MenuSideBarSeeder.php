@@ -61,5 +61,35 @@ class MenuSideBarSeeder extends Seeder
             ['route_name' => 'admin.announcements.index'],
             ['label' => 'Anúncios', 'icon' => 'megaphone', 'permission' => 'send-notifications', 'order' => 10],
         );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'atendimento.dashboard'],
+            ['label' => 'Atendimento IA', 'icon' => 'chat-bubble-left-right', 'permission' => 'view-atendimentos', 'order' => 11],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'atendimento.index'],
+            ['label' => 'Atendimentos', 'icon' => 'inbox', 'permission' => 'view-atendimentos', 'order' => 12],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'atendimento.clientes.index'],
+            ['label' => 'Clientes', 'icon' => 'user-group', 'permission' => 'view-clientes', 'order' => 13],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'atendimento.canais.index'],
+            ['label' => 'Canais', 'icon' => 'signal', 'permission' => 'manage-canais', 'order' => 14],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'atendimento.chatbot.index'],
+            ['label' => 'IA e Chatbot', 'icon' => 'cpu-chip', 'permission' => 'manage-chatbot', 'order' => 15],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'atendimento.relatorios.index'],
+            ['label' => 'Relatórios', 'icon' => 'chart-bar', 'permission' => 'view-relatorios-atendimento', 'order' => 16],
+        );
     }
 }

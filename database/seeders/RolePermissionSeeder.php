@@ -24,6 +24,13 @@ class RolePermissionSeeder extends Seeder
             'manage-config',
             'view-audits',
             'send-notifications',
+            'view-atendimentos',
+            'manage-atendimentos',
+            'view-clientes',
+            'manage-clientes',
+            'manage-canais',
+            'manage-chatbot',
+            'view-relatorios-atendimento',
         ];
 
         foreach ($permissions as $permission) {
@@ -34,8 +41,9 @@ class RolePermissionSeeder extends Seeder
         $admin->syncPermissions($permissions);
 
         $manager = Role::findOrCreate('manager');
-        $manager->syncPermissions(['view-users']);
+        $manager->syncPermissions(['view-users', 'view-atendimentos', 'view-clientes', 'view-relatorios-atendimento']);
 
-        Role::findOrCreate('operator');
+        $operator = Role::findOrCreate('operator');
+        $operator->syncPermissions(['view-atendimentos', 'manage-atendimentos', 'view-clientes', 'manage-clientes']);
     }
 }
