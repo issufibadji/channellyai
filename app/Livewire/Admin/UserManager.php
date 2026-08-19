@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Notifications\UserAccountCreated;
 use Illuminate\Support\Facades\Hash;
@@ -10,7 +11,6 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.master')]
 class UserManager extends Component
@@ -93,7 +93,7 @@ class UserManager extends Component
 
         $isNew = ! $this->userId;
 
-        $user = $isNew ? new User() : User::findOrFail($this->userId);
+        $user = $isNew ? new User : User::findOrFail($this->userId);
         $user->name = $this->name;
         $user->email = $this->email;
 
@@ -109,7 +109,7 @@ class UserManager extends Component
         $user->syncRoles($this->roles);
 
         if ($isNew) {
-            $user->notify(new UserAccountCreated());
+            $user->notify(new UserAccountCreated);
         }
 
         $this->dispatch('close-modal');

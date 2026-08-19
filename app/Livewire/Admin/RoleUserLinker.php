@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Role;
 use App\Models\User;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.master')]
 class RoleUserLinker extends Component

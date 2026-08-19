@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Permission;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Spatie\Permission\Models\Permission;
 
 #[Layout('components.layouts.master')]
 class PermissionManager extends Component

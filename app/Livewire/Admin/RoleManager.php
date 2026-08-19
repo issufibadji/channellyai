@@ -2,11 +2,11 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.master')]
 class RoleManager extends Component

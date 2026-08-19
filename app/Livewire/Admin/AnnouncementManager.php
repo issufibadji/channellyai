@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Role;
 use App\Models\SystemAnnouncement;
 use App\Models\User;
 use App\Notifications\SystemAnnouncementNotification;
@@ -10,7 +11,6 @@ use Illuminate\Support\Facades\Notification;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.master')]
 class AnnouncementManager extends Component
