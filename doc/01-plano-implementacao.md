@@ -147,7 +147,7 @@ Depende de: Fases 1–6 (precisa ter ações reais para auditar).
 
 Depende de: Core completo (Fases 0–7). Detalhamento completo em `04-atendimento-ia.md`.
 
-- [ ] Canais (WhatsApp, Instagram, Facebook, Site/Chat, E-mail) — normalização em entidade única de Atendimento
+- [ ] Canais (Telegram, WhatsApp, Instagram, Facebook, Site/Chat, E-mail) — normalização em entidade única de Atendimento
 - [ ] Motor de IA & Chatbot com regras de transferência para setor humano
 - [ ] Painel: Dashboard, Atendimentos, Clientes, Canais, IA e Chatbot, Relatórios
 - [ ] Integração com Menu, RBAC, App Config, Notificações e Audit do Core (sem duplicar mecanismos)
