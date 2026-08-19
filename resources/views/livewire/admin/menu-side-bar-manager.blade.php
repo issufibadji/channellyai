@@ -4,10 +4,11 @@
         <x-button wire:click="create">Novo item</x-button>
     </div>
 
-    <x-table :headers="['Label', 'Rota', 'Permissão', 'Ordem', 'Ações']">
+    <x-table :headers="['Label', 'Seção', 'Rota', 'Permissão', 'Ordem', 'Ações']">
         @foreach ($items as $item)
             <tr>
                 <td class="px-4 py-3">{{ $item->label }}</td>
+                <td class="px-4 py-3 text-text-secondary">{{ $item->group ?? '—' }}</td>
                 <td class="px-4 py-3 text-text-secondary">{{ $item->route_name }}</td>
                 <td class="px-4 py-3">
                     @if ($item->permission)
@@ -32,6 +33,7 @@
             @foreach ($item->children as $child)
                 <tr>
                     <td class="px-4 py-3 pl-10 text-text-secondary">{{ $child->label }}</td>
+                    <td class="px-4 py-3 text-text-secondary">{{ $child->group ?? '—' }}</td>
                     <td class="px-4 py-3 text-text-secondary">{{ $child->route_name }}</td>
                     <td class="px-4 py-3">
                         @if ($child->permission)
@@ -65,6 +67,18 @@
             </div>
 
             <div>
+                <label class="block text-sm font-medium mb-1 text-text-primary">Seção (agrupamento visual na sidebar)</label>
+                <input type="text" wire:model="group" list="menu-groups" placeholder="ex.: Atendimento, Administração do Sistema" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                <datalist id="menu-groups">
+                    @foreach ($existingGroups as $existingGroup)
+                        <option value="{{ $existingGroup }}"></option>
+                    @endforeach
+                </datalist>
+                @error('group') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                <p class="mt-1 text-xs text-text-secondary">Itens com a mesma seção ficam agrupados sob um cabeçalho na sidebar. Deixe em branco para não agrupar.</p>
+            </div>
+
+            <div>
                 <label class="block text-sm font-medium mb-1 text-text-primary">Ícone (nome do heroicon)</label>
                 <input type="text" wire:model="icon" placeholder="ex.: home, users, cog-6-tooth" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                 @error('icon') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
@@ -77,7 +91,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium mb-1 text-text-primary">Grupo pai</label>
+                <label class="block text-sm font-medium mb-1 text-text-primary">Item pai (submenu dentro de outro item)</label>
                 <select wire:model="parentId" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     <option value="">— Nenhum (item raiz) —</option>
                     @foreach ($parentOptions as $option)

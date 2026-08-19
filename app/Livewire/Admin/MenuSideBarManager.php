@@ -16,6 +16,9 @@ class MenuSideBarManager extends Component
     #[Validate('required|string|max:255')]
     public string $label = '';
 
+    #[Validate('nullable|string|max:100')]
+    public string $group = '';
+
     #[Validate('nullable|string|max:100|regex:/^[a-z0-9-]*$/')]
     public string $icon = '';
 
@@ -30,7 +33,7 @@ class MenuSideBarManager extends Component
 
     public function create(): void
     {
-        $this->reset(['menuId', 'label', 'icon', 'routeName', 'parentId', 'order']);
+        $this->reset(['menuId', 'label', 'group', 'icon', 'routeName', 'parentId', 'order']);
         $this->dispatch('open-modal', name: 'menu-form');
     }
 
@@ -40,6 +43,7 @@ class MenuSideBarManager extends Component
 
         $this->menuId = $item->id;
         $this->label = $item->label;
+        $this->group = $item->group ?? '';
         $this->icon = $item->icon ?? '';
         $this->routeName = $item->route_name;
         $this->parentId = $item->parent_id;
@@ -68,6 +72,7 @@ class MenuSideBarManager extends Component
             ['id' => $this->menuId],
             [
                 'label' => $this->label,
+                'group' => $this->group ?: null,
                 'icon' => $this->icon ?: null,
                 'route_name' => $this->routeName,
                 'parent_id' => $this->parentId,
@@ -93,6 +98,7 @@ class MenuSideBarManager extends Component
         return view('livewire.admin.menu-side-bar-manager', [
             'items' => MenuSideBar::roots()->with('children')->get(),
             'parentOptions' => MenuSideBar::roots()->when($this->menuId, fn ($q) => $q->where('id', '!=', $this->menuId))->get(),
+            'existingGroups' => MenuSideBar::query()->whereNotNull('group')->distinct()->orderBy('group')->pluck('group'),
         ]);
     }
 }

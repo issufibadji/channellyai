@@ -23,7 +23,7 @@ class Sidebar extends Component
             $item->setRelation('children', $item->children->filter(fn ($child) => $this->visible($child)));
         });
 
-        return view('livewire.sidebar', ['items' => $items]);
+        return view('livewire.sidebar', ['groups' => $items->groupBy(fn ($item) => $item->group ?: '')]);
     }
 
     private function visible(MenuSideBar $item): bool
