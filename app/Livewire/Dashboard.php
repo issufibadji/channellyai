@@ -11,8 +11,13 @@ class Dashboard extends Component
 {
     public function render()
     {
+        $user = Auth::user();
+
         return view('livewire.dashboard', [
-            'recentNotifications' => Auth::user()->notifications()->latest()->limit(5)->get(),
+            'recentNotifications' => $user->notifications()->latest()->limit(5)->get(),
+            'unreadCount' => $user->unreadNotifications()->count(),
+            'roleName' => $user->getRoleNames()->first() ?? 'Sem função',
+            'memberSince' => $user->created_at,
         ]);
     }
 }

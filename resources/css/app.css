@@ -9,19 +9,19 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
     --font-mono: 'Kode Mono', ui-monospace, monospace;
 
-    /* Base (dark theme) */
-    --color-surface: oklch(14% 0.02 260);
-    --color-surface-card: oklch(19% 0.03 258);
-    --color-surface-border: oklch(28% 0.02 258);
+    /* Base (dark theme, azul-marinho profundo) */
+    --color-surface: oklch(16% 0.035 262);
+    --color-surface-card: oklch(21% 0.04 260);
+    --color-surface-border: oklch(32% 0.035 258);
 
     /* Texto */
     --color-text-primary: oklch(97% 0 0);
-    --color-text-secondary: oklch(65% 0.02 258);
+    --color-text-secondary: oklch(68% 0.03 250);
 
     /* Acento (ativo, botões, gráficos) */
-    --color-primary: oklch(62% 0.20 250);
-    --color-primary-dark: oklch(52% 0.20 250);
-    --color-accent: oklch(78% 0.13 200);
+    --color-primary: oklch(65% 0.19 250);
+    --color-primary-dark: oklch(54% 0.19 253);
+    --color-accent: oklch(80% 0.13 205);
 
     /* Estado */
     --color-success: oklch(70% 0.18 145);
@@ -29,6 +29,43 @@
     --color-danger: oklch(60% 0.22 25);
 }
 
+:root.light {
+    /* Base (light theme) */
+    --color-surface: oklch(97% 0.008 258);
+    --color-surface-card: oklch(100% 0 0);
+    --color-surface-border: oklch(90% 0.015 258);
+
+    /* Texto */
+    --color-text-primary: oklch(22% 0.02 258);
+    --color-text-secondary: oklch(46% 0.03 258);
+
+    /* Acento (ativo, botões, gráficos) */
+    --color-primary: oklch(55% 0.19 250);
+    --color-primary-dark: oklch(45% 0.19 253);
+    --color-accent: oklch(52% 0.14 205);
+}
+
 body {
     font-family: 'Kode Mono', monospace;
+    background-color: var(--color-surface);
+    background-image:
+        radial-gradient(ellipse 900px 600px at 8% -5%, oklch(45% 0.14 250 / 35%), transparent 60%),
+        radial-gradient(ellipse 700px 500px at 100% 10%, oklch(60% 0.14 205 / 20%), transparent 55%),
+        radial-gradient(ellipse 800px 700px at 50% 110%, oklch(40% 0.12 260 / 25%), transparent 60%);
+    background-attachment: fixed;
+}
+
+:root.light body {
+    background-image:
+        radial-gradient(ellipse 900px 600px at 8% -5%, oklch(85% 0.05 250 / 45%), transparent 60%),
+        radial-gradient(ellipse 700px 500px at 100% 10%, oklch(88% 0.05 205 / 35%), transparent 55%),
+        radial-gradient(ellipse 800px 700px at 50% 110%, oklch(90% 0.04 260 / 35%), transparent 60%);
+}
+
+.glow-border {
+    box-shadow: 0 0 0 1px oklch(70% 0.15 230 / 8%), 0 8px 30px -12px oklch(60% 0.2 250 / 35%);
+}
+
+:root.light .glow-border {
+    box-shadow: 0 0 0 1px oklch(70% 0.1 230 / 10%), 0 8px 24px -14px oklch(60% 0.15 250 / 20%);
 }

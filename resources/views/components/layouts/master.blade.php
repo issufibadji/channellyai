@@ -7,6 +7,12 @@
     <meta name="vapid-key" content="{{ config('webpush.vapid.public_key') }}">
     <title>{{ $title ?? config('app.name') }}</title>
 
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light');
+        }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -19,7 +25,20 @@
         <livewire:sidebar />
 
         <main class="flex-1 min-w-0 overflow-x-hidden">
-            <div class="flex justify-end items-center px-6 py-3 border-b border-surface-border">
+            <div
+                class="flex justify-end items-center gap-2 px-6 py-3 border-b border-surface-border bg-surface-card/40 backdrop-blur"
+                x-data="{ light: document.documentElement.classList.contains('light') }"
+            >
+                <button
+                    type="button"
+                    @click="light = !light; document.documentElement.classList.toggle('light', light); localStorage.setItem('theme', light ? 'light' : 'dark')"
+                    class="p-2 rounded-lg hover:bg-surface-border text-text-secondary hover:text-text-primary transition"
+                    title="Alternar tema claro/escuro"
+                >
+                    <x-heroicon-o-moon x-show="!light" class="w-5 h-5" />
+                    <x-heroicon-o-sun x-show="light" x-cloak class="w-5 h-5" />
+                </button>
+
                 <livewire:notification-bell />
             </div>
 
