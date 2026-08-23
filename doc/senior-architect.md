@@ -393,12 +393,12 @@ php artisan view:clear && php artisan route:clear
 ## Pontos Críticos de Arquitetura
 
 1. **Middleware order** obrigatório: `auth → verified → check2fa` (ver `02-core.md`)
-2. **UUID em vez de auto-increment** no model `User` — `$user->id` é string UUID
+2. **Auto-increment em todos os models**, incluindo `User` — `$user->id` é inteiro (`$table->id()`), não UUID
 3. **Service Providers** ficam em `app/Providers/` e são registrados em `bootstrap/providers.php` (Laravel 13) — não duplicar registros
 4. **Livewire** — componentes seguem a convenção de namespace `App\Livewire\*`; alias manual só quando necessário
 5. **Um único `vite.config.js`** na raiz do projeto — não fragmentar o build por domínio
 6. **Permissões são cacheadas** — sempre rodar `permission:cache-reset` após seeders de permissão
-7. **Eventos entre domínios** — usar `Event::dispatch()` e Listeners registrados no `EventServiceProvider`
+7. **Eventos entre domínios** — usar `Event::dispatch()` e Listeners em `app/Listeners/*`; este projeto (Laravel 13) não tem `EventServiceProvider` como arquivo — os listeners são auto-descobertos pela convenção (ver `php artisan event:list`)
 8. **Soft Deletes** — preferir `softDeletes()` em tabelas de domínio para manter histórico
 9. **Core é transversal** — Menu, App Config, Notificações, Perfil e Auditoria não devem conter regra de negócio de domínio algum
 

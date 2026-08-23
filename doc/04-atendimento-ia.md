@@ -92,34 +92,52 @@ Este domínio **usa** a infraestrutura do Core, mas não a reimplementa:
 
 ---
 
+## Estado Atual
+
+A **infraestrutura do painel está implementada e testada** (models, telas, RBAC, menu, audit). As **integrações reais de canal e o motor de IA definitivo ainda não** — foram propositalmente deixados como stub/MVP para permitir avançar sem depender da conclusão do agente externo (nanoclaw). Ver `01-plano-implementacao.md` → Fase 8 para o resumo executivo.
+
+**Modelagem implementada** (`app/Models/Atendimento/*`): `Cliente`, `Canal`, `Atendimento`, `AtendimentoMensagem`, `ChatbotRegra` — todas auditadas (exceto mensagens, por volume).
+
+**Contrato de integração com o agente de IA:** `App\Services\Atendimento\ChatbotEngine::responder(Atendimento $atendimento, string $mensagemCliente): ChatbotResponse`. A implementação atual casa a mensagem do cliente por palavra-chave contra `chatbot_regras` (tela "IA e Chatbot") e retorna resposta + setor de transferência opcional. **Quando o nanoclaw estiver pronto, trocar a implementação desta classe mantendo a mesma assinatura** — nenhum outro ponto do sistema precisa mudar.
+
+---
+
 ## Funcionalidades Planejadas
 
 ### Canais
 
-- [ ] Integração com WhatsApp (API oficial ou provedor)
-- [ ] Integração com Instagram
-- [ ] Integração com Facebook
-- [ ] Widget de chat para o site
-- [ ] Integração com E-mail (recebimento e resposta)
-- [ ] Normalização de mensagens de todos os canais em uma entidade única de Atendimento
+- [ ] Integração com WhatsApp (API oficial ou provedor) — **pendente**, depende de credenciais/API externa
+- [ ] Integração com Instagram — **pendente**
+- [ ] Integração com Facebook — **pendente**
+- [ ] Widget de chat para o site — **pendente**
+- [ ] Integração com E-mail (recebimento e resposta) — **pendente**
+- [x] Normalização de mensagens em uma entidade única de Atendimento — implementada internamente (`atendimentos` + `atendimento_mensagens`); hoje a única forma de entrada é a tela de Atendimento (inserção manual/simulada), não webhooks reais dos canais acima
+- [x] Cadastro de Canais (tela CRUD) — tipo, nome, ativo/inativo; a `configuracao` (JSON) existe no schema para credenciais de API, mas nenhuma integração a lê ainda
 
 ### IA & Chatbot
 
-- [ ] Motor de IA para identificação de intenção e resposta automática
-- [ ] Regras de transferência para setor humano (Vendas, Suporte, Financeiro, Logística, Outros)
-- [ ] Fluxo de marcação de compromissos via IA
-- [ ] Fluxo de segunda via de pagamento/boleto via IA
+- [x] Motor de resposta automática por palavra-chave (`ChatbotEngine`) — **MVP/stub**, não é um modelo de IA real
+- [x] Regras de transferência para setor humano (Vendas, Suporte, Financeiro, Logística, Outros) — tela "IA e Chatbot" (`chatbot_regras`)
+- [ ] Motor de IA real (substituir o stub pelo agente nanoclaw)
+- [ ] Fluxo de marcação de compromissos via IA — depende de integração com sistema de agenda (fora de escopo até então)
+- [ ] Fluxo de segunda via de pagamento/boleto via IA — depende de integração com sistema financeiro (fora de escopo até então)
 - [ ] Envio de informativos e avisos via IA
-- [ ] Respostas a dúvidas frequentes (FAQ) via IA
+- [x] Respostas a dúvidas frequentes (FAQ) — coberto pelo motor por palavra-chave atual, de forma limitada
 
 ### Painel
 
-- [ ] Dashboard com métricas reais (atendimentos, conversas, resoluções, satisfação)
-- [ ] Listagem de Atendimentos com filtros por canal/status
-- [ ] Cadastro/consulta de Clientes
-- [ ] Tela de configuração de Canais
-- [ ] Tela de configuração da IA e Chatbot
-- [ ] Relatórios com filtros por período/canal/setor e export
+- [x] Dashboard com métricas reais (total, abertos, em atendimento, resolvidos, satisfação média, tendência de 14 dias, breakdown por status/canal, preview da conversa mais recente)
+- [x] Listagem de Atendimentos com filtros por canal/status
+- [x] Tela de detalhe do Atendimento (thread de mensagens cliente/IA/atendente, mudança de status/setor, atribuição de atendente)
+- [x] Cadastro/consulta de Clientes
+- [x] Tela de configuração de Canais
+- [x] Tela de configuração da IA e Chatbot (regras)
+- [x] Relatórios com filtros por período e breakdown por status/canal/setor
+- [ ] Export de relatórios (CSV/PDF) — não implementado
+
+### Integração com o Core (pendências)
+
+- [ ] Notificar atendente via Notificações do Core quando um atendimento é transferido para seu setor (hoje não há esse aviso automático)
 
 ---
 

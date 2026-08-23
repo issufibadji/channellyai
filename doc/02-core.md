@@ -18,41 +18,27 @@ Tudo isso é responsabilidade do Core. O que **não é** responsabilidade do Cor
 
 ---
 
-## Estado Atual (Scaffold)
+## Estado Atual
 
-A aplicação já conta com o scaffold de código do Core (controllers, providers, Livewire) e, no banco de dados, já existem as migrations de boa parte das funcionalidades planejadas — a implementação da lógica (Models, Services, Livewire components, views) ainda está pendente para várias delas.
+O Core está **implementado e testado** (Fases 0–7 do `01-plano-implementacao.md` concluídas). Este documento descreve a arquitetura final, não mais um scaffold pendente.
 
-**Código implementado:**
+**Estrutura de código (Core):**
 
-| Arquivo | Namespace | Responsabilidade |
-|---|---|---|
-| `app/Livewire/Dashboard.php` | `App\Livewire\Dashboard` | Componente Livewire da dashboard |
-| `resources/views/components/layouts/master.blade.php` | — | Layout principal da aplicação |
-| `app/Http/Controllers/CoreController.php` | `App\Http\Controllers\CoreController` | Controller base do Core |
-| `app/Providers/CoreServiceProvider.php` | `App\Providers\CoreServiceProvider` | Provider principal do Core |
-| `app/Providers/EventServiceProvider.php` | `App\Providers\EventServiceProvider` | Registro de listeners do Core |
-| `app/Providers/RouteServiceProvider.php` | `App\Providers\RouteServiceProvider` | Carrega rotas da aplicação |
-
-**Migrations já existentes (`database/migrations/`):**
-
-| Migration | Funcionalidade |
+| Área | Arquivos principais |
 |---|---|
-| `0001_01_01_000000_create_users_table.php` | Usuários (base do Laravel) |
-| `0001_01_01_000001_create_cache_table.php` | Cache (base do Laravel) |
-| `0001_01_01_000002_create_jobs_table.php` | Filas/Jobs (base do Laravel) |
-| `2025_05_28_145941_create_permission_tables.php` | RBAC — tabelas do Spatie Permission |
-| `2025_05_30_032716_add_2fa_and_verified_to_users_table.php` | Autenticação — colunas de 2FA e verificação de email |
-| `2025_06_01_190341_add_confirmed_2fa_to_users_table.php` | Autenticação — confirmação do 2FA |
-| `2025_06_03_015601_create_menu_side_bars_table.php` | Menu — itens da sidebar armazenados em banco |
-| `2025_06_06_151109_create_audits_table.php` | Audit Logging — registro de auditoria |
-| `2025_06_06_201335_create_app_configs_table.php` | App Config — configurações da aplicação |
-| `2025_06_07_155128_create_notifications_table.php` | Notificações |
-| `2025_06_08_000000_create_push_subscriptions_table.php` | Notificações — inscrições de Web Push |
-| `2025_06_09_000000_add_avatar_path_to_users_table.php` | Perfil — avatar do usuário |
-| `2025_06_09_000000_add_content_encoding_to_push_subscriptions_table.php` | Notificações — encoding do payload de push |
-| `2025_06_11_000000_create_user_additional_data_table.php` | Perfil — dados adicionais do usuário |
-| `2025_06_11_000001_create_user_addresses_table.php` | Perfil — endereços do usuário |
-| `2025_09_20_172535_create_user_profiles_table.php` | Perfil — dados de perfil do usuário |
+| Autenticação | `app/Livewire/Auth/*` (Login, ForgotPassword, ResetPassword, TwoFactorChallenge, VerifyEmailNotice), `app/Actions/Auth/*` |
+| RBAC | `app/Models/Role.php`, `app/Models/Permission.php` (estendem os models do Spatie, com `Auditable`), `app/Http/Middleware/CheckPermission.php` |
+| Menu / Sidebar | `app/Models/MenuSideBar.php`, `app/Livewire/Sidebar.php`, `app/Livewire/Admin/MenuSideBarManager.php` |
+| Layout / UI | `resources/views/components/layouts/master.blade.php` (autenticado) e `guest.blade.php` (login/2FA/recuperação), componentes `x-button`/`x-card`/`x-modal`/`x-badge`/`x-table`/`x-alert` |
+| App Config | `app/Models/AppConfig.php`, `app/Services/AppConfigService.php`, helpers `config_app()`/`config_app_media()`, `app/Livewire/Admin/AppConfigManager.php` |
+| Notificações | `app/Models/PushSubscription.php`, `app/Notifications/*`, `app/Livewire/NotificationBell.php`, `app/Livewire/NotificationList.php` |
+| Perfil do usuário | `app/Models/UserProfile.php`, `UserAddress.php`, `UserAdditionalData.php`, `app/Livewire/Settings/Profile.php` |
+| Audit Logging | pacote `owen-it/laravel-auditing` (trait `Auditable` nos models), `app/Listeners/Audit/*` (eventos de login/logout), `app/Livewire/Admin/AuditManager.php` |
+| Provider | `app/Providers/CoreServiceProvider.php` (Gate global de admin) |
+
+> Este Laravel 13 não usa arquivos `EventServiceProvider`/`RouteServiceProvider` separados: rotas são registradas via `bootstrap/app.php` (`routes/web.php`, `routes/auth.php`, `routes/admin.php`, `routes/atendimento.php`) e listeners de evento são auto-descobertos pela convenção `app/Listeners/*`.
+
+**Migrations do Core (`database/migrations/`):** cobrem users (+2FA, avatar, ativo/requires_2fa), permission_tables, menu_side_bars (+coluna `group`), audits, app_configs, notifications, push_subscriptions, user_profiles (+CPF/RG/telefone secundário), user_addresses, user_additional_data. Ver o diretório para a lista completa e datada — não é reproduzida aqui para evitar desatualização.
 
 ---
 
@@ -208,74 +194,78 @@ class AppointmentList extends Component
 
 ---
 
-## Funcionalidades Planejadas
+## Funcionalidades Implementadas
+
+Todas as fases abaixo estão concluídas (ver `01-plano-implementacao.md` para o detalhamento de testes por fase).
 
 ### Autenticação e Segurança
 
-- [ ] Login com email + senha
-- [ ] Logout
-- [ ] Registro de usuário (se aplicável ao produto)
-- [ ] Recuperação de senha (forgot/reset)
-- [ ] Email verification
-- [ ] Middleware `check2fa`
-- [ ] 2FA via TOTP (Google Authenticator)
+- [x] Login com email + senha
+- [x] Logout
+- [x] Registro de usuário — **não implementado por decisão de produto**; admin cria usuários
+- [x] Recuperação de senha (forgot/reset)
+- [x] Email verification
+- [x] Middleware `check2fa`
+- [x] 2FA via TOTP (Google Authenticator)
 
 ### RBAC
 
-- [ ] Seeder de roles iniciais (`admin`, `manager`, `operator`)
-- [ ] Seeder de permissions por área da aplicação
-- [ ] Gate definitions em `CoreServiceProvider`
-- [ ] Blade directive `@can` funcionando com roles do Spatie
+- [x] Seeder de roles iniciais (`admin`, `manager`, `operator`)
+- [x] Seeder de permissions por área da aplicação
+- [x] Gate definitions em `CoreServiceProvider`
+- [x] Blade directive `@can` funcionando com roles do Spatie
 
 ### Interface
 
-- [ ] Sidebar component (Livewire, itens dinâmicos por permissão)
-- [ ] Dashboard com métricas reais (widgets por área)
-- [ ] Componentes Blade compartilhados: button, card, alert, badge, modal, table
-- [ ] Flash notifications (success, error, warning, info)
-- [ ] Interações leves (toggles, dropdowns, modais) via Alpine.js
+- [x] Sidebar component (Livewire, itens dinâmicos por permissão, seções agrupadas, modo recolhido)
+- [x] Dashboard com métricas reais do Core
+- [x] Componentes Blade compartilhados: button, card, alert, badge, modal, table
+- [x] Flash notifications (success, error, warning, info)
+- [x] Interações leves (toggles, dropdowns, modais) via Alpine.js
+- [x] Tema claro/escuro (paleta validada, persistido em `localStorage`)
 
 ### Menu (Sidebar dinâmica)
 
-- [x] Migration `menu_side_bars`
-- [ ] Model `MenuSideBar`
-- [ ] Componente Livewire `Sidebar` lendo os itens do banco
-- [ ] Filtro de itens por permissão do usuário
-- [ ] Tela admin de CRUD dos itens de menu (ordem, ícone, rota, grupo pai)
+- [x] Migration `menu_side_bars` (+ coluna `group` para seções)
+- [x] Model `MenuSideBar`
+- [x] Componente Livewire `Sidebar` lendo os itens do banco
+- [x] Filtro de itens por permissão do usuário
+- [x] Tela admin de CRUD dos itens de menu (ordem, ícone, rota, grupo pai, seção) — valida rota e ícone antes de salvar
 
 ### App Config
 
 - [x] Migration `app_configs`
-- [ ] Model `AppConfig`
-- [ ] Service `AppConfigService` com cache
-- [ ] Helper/facade para leitura rápida de config (ex.: `config_app('nome_do_sistema')`)
-- [ ] Tela admin de edição das configurações
+- [x] Model `AppConfig`
+- [x] Service `AppConfigService` com cache (valor + mídia)
+- [x] Helpers `config_app()` / `config_app_media()`
+- [x] Tela admin de edição das configurações
+- [x] Seeder com chaves padrão, **efetivamente consumidas** pela aplicação (nome/logo/avatar padrão)
 
 ### Notificações
 
 - [x] Migration `notifications`
 - [x] Migration `push_subscriptions` (+ `content_encoding`)
-- [ ] Model `PushSubscription`
-- [ ] Classes de Notification do Laravel (canais: database, mail, web push)
-- [ ] Componente Livewire de sino de notificações
-- [ ] Integração de Web Push no front-end (Service Worker + VAPID keys)
+- [x] Model `PushSubscription`
+- [x] Classes de Notification do Laravel (canais: database, webhook, web push — não `mail`, ver `01-plano-implementacao.md`)
+- [x] Componente Livewire de sino de notificações
+- [x] Integração de Web Push no front-end (Service Worker + VAPID keys)
 
 ### Perfil do Usuário
 
-- [x] Migration `user_profiles`
+- [x] Migration `user_profiles` (+ CPF/RG/telefone secundário)
 - [x] Migration `user_additional_data`
 - [x] Migration `user_addresses`
 - [x] Coluna `avatar_path` em `users`
-- [ ] Models `UserProfile`, `UserAdditionalData`, `UserAddress`
-- [ ] Tela "Meu Perfil" (dados pessoais, endereços, avatar)
-- [ ] Upload e recorte de avatar
+- [x] Models `UserProfile`, `UserAdditionalData`, `UserAddress`
+- [x] Tela "Meu Perfil" (dados pessoais, endereços, avatar, segurança/2FA embutido)
+- [x] Upload e recorte de avatar (cropper client-side em canvas, sem lib externa)
 
-### Infraestrutura
+### Infraestrutura (Audit Logging)
 
 - [x] Migration `audits`
-- [ ] Model `AuditLog`
-- [ ] Middleware de auditoria (registra route, user_id, payload, IP)
-- [ ] Interface admin para visualizar logs de auditoria
+- [x] Model de auditoria — via pacote `owen-it/laravel-auditing` (`OwenIt\Auditing\Models\Audit`), não um `AuditLog` próprio
+- [x] Auditoria automática por model (trait `Auditable`) + Listeners para eventos de autenticação (`app/Listeners/Audit/*`) — **não há middleware genérico de auditoria de rota**
+- [x] Interface admin para visualizar logs de auditoria
 
 ---
 

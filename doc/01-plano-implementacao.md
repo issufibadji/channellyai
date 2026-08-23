@@ -30,129 +30,146 @@ Cada fase só deve ser considerada concluída quando o item correspondente estiv
 
 ---
 
-## Fase 0 — Setup do Projeto
+## Fase 0 — Setup do Projeto ✅ Concluída
 
 Pré-requisito para todo o resto.
 
-- [ ] Laravel 13 instalado e rodando
-- [ ] Livewire 4, Alpine.js e Tailwind CSS configurados (`vite.config.js`, `resources/css/app.css`)
-- [ ] Spatie Permission instalado
-- [ ] Estrutura de pastas conforme `senior-architect.md` (`app/Actions`, `app/Services`, `app/Livewire`, etc.)
-- [ ] `master.blade.php` existente (já implementado — ver `02-core.md`)
-- [ ] `CoreServiceProvider`, `EventServiceProvider`, `RouteServiceProvider` existentes (já implementados)
-- [ ] Migrations base já presentes no banco (users, cache, jobs, permission_tables, 2FA, menu_side_bars, audits, app_configs, notifications, push_subscriptions, perfil)
+- [x] Laravel 13 instalado e rodando
+- [x] Livewire 4, Alpine.js e Tailwind CSS configurados (`vite.config.js`, `resources/css/app.css`)
+- [x] Spatie Permission instalado
+- [x] Estrutura de pastas conforme `senior-architect.md` (`app/Actions`, `app/Services`, `app/Livewire`, etc.)
+- [x] `master.blade.php` existente — layout com sidebar recolhível, seções agrupadas, tema claro/escuro (ver `02-core.md`)
+- [x] `CoreServiceProvider` existente (registra o Gate global de admin)
+- [x] Migrations base já presentes no banco (users, cache, jobs, permission_tables, 2FA, menu_side_bars, audits, app_configs, notifications, push_subscriptions, perfil)
+
+> Nota: este projeto (Laravel 13) não usa `EventServiceProvider`/`RouteServiceProvider` como arquivos separados — rotas são carregadas via `bootstrap/app.php` e eventos são auto-descobertos pela convenção `app/Listeners/*` (ver `02-core.md`).
 
 ---
 
-## Fase 1 — Autenticação
+## Fase 1 — Autenticação ✅ Concluída
 
 Depende de: Fase 0.
 
-- [ ] Login com email + senha
-- [ ] Logout
-- [ ] Recuperação de senha (forgot/reset)
-- [ ] Email verification
-- [ ] 2FA via TOTP (Google Authenticator) — colunas já existem em `users` (2FA + confirmação)
-- [ ] Middleware `check2fa`
-- [ ] Registro de usuário (avaliar se é necessário para este produto — normalmente admin cria usuários)
-- [ ] Testes feature do fluxo de autenticação
+- [x] Login com email + senha
+- [x] Logout
+- [x] Recuperação de senha (forgot/reset)
+- [x] Email verification
+- [x] 2FA via TOTP (Google Authenticator)
+- [x] Middleware `check2fa`
+- [x] Registro de usuário — decisão de produto: **não implementado**; admin cria usuários pela tela de Usuários
+- [x] Testes feature do fluxo de autenticação (`tests/Feature/Auth/*`)
 
-**Critério de conclusão:** um usuário consegue logar, ser exigido 2FA quando ativado, recuperar senha e ter o email verificado — tudo coberto por teste automatizado.
+**Critério de conclusão:** ✅ atendido — um usuário consegue logar, ser exigido 2FA quando ativado, recuperar senha e ter o email verificado, tudo coberto por teste automatizado.
 
 ---
 
-## Fase 2 — RBAC (Roles & Permissions)
+## Fase 2 — RBAC (Roles & Permissions) ✅ Concluída
 
 Depende de: Fase 1.
 
-- [ ] Seeder de roles iniciais (`admin`, `manager`, `operator`)
-- [ ] Seeder de permissions (padrão `[acao]-[recurso]`, ver `senior-architect.md`)
-- [ ] Gate definitions em `CoreServiceProvider`
-- [ ] Middleware `checkPermission`
-- [ ] Stack de middleware completa nas rotas protegidas: `auth → verified → check2fa → checkPermission`
-- [ ] `@can` funcionando nas views Blade
+- [x] Seeder de roles iniciais (`admin`, `manager`, `operator`)
+- [x] Seeder de permissions (padrão `[acao]-[recurso]`, ver `senior-architect.md`)
+- [x] Gate definitions em `CoreServiceProvider` (admin tem bypass total via `Gate::before`)
+- [x] Middleware `checkPermission`
+- [x] Stack de middleware completa nas rotas protegidas: `auth → verified → check2fa → checkPermission`
+- [x] `@can` funcionando nas views Blade
 
-**Critério de conclusão:** um usuário sem a permissão correta recebe 403 ao tentar acessar rota ou ação protegida.
+**Critério de conclusão:** ✅ atendido — um usuário sem a permissão correta recebe 403.
 
 ---
 
-## Fase 3 — UI Compartilhada (Layout, Componentes, Menu)
+## Fase 3 — UI Compartilhada (Layout, Componentes, Menu) ✅ Concluída
 
 Depende de: Fase 2 (menu filtra por permissão).
 
-- [ ] Design tokens do Tailwind aplicados em `app.css` (ver `03-ui-system.md` → Referência Visual)
-- [ ] Componentes Blade: `<x-button>`, `<x-card>`, `<x-alert>`, `<x-modal>`, badge, table
-- [ ] Flash notifications (success, error, warning, info)
-- [ ] Model `MenuSideBar`
-- [ ] Componente Livewire `Sidebar` lendo itens do banco (`menu_side_bars`)
-- [ ] Filtro de itens do menu por permissão do usuário autenticado
-- [ ] Tela admin de CRUD dos itens de menu (ordem, ícone, rota, grupo pai)
-- [ ] Dashboard inicial (ainda sem métricas de negócio — placeholder)
+- [x] Design tokens do Tailwind aplicados em `app.css` (paleta azul-marinho/ciano, tema claro/escuro validado)
+- [x] Componentes Blade: `<x-button>`, `<x-card>`, `<x-alert>`, `<x-modal>`, `<x-badge>`, `<x-table>`
+- [x] Flash notifications (success, error, warning, info)
+- [x] Model `MenuSideBar` (com coluna `group` para seções visuais na sidebar)
+- [x] Componente Livewire `Sidebar` lendo itens do banco, com seções agrupadas (ex.: "Atendimento" vs. "Administração do Sistema") e modo recolhido (ícones only, persistido em `localStorage`)
+- [x] Filtro de itens do menu por permissão do usuário autenticado
+- [x] Tela admin de CRUD dos itens de menu (ordem, ícone, rota, grupo pai, seção) — valida rota existente e ícone Heroicons válido antes de salvar
+- [x] Dashboard inicial com métricas reais do Core (função do usuário, notificações não lidas, membro desde, atividade recente)
 
-**Critério de conclusão:** usuário autenticado vê apenas os itens de menu permitidos para seu role; layout consistente com a referência visual em todas as telas do Core.
+**Critério de conclusão:** ✅ atendido.
 
 ---
 
-## Fase 4 — App Config
+## Fase 4 — App Config ✅ Concluída
 
 Depende de: Fase 2 (tela admin protegida por permissão).
 
-- [ ] Model `AppConfig`
-- [ ] Service `AppConfigService` com cache
-- [ ] Helper/facade para leitura rápida (ex.: `config_app('nome_do_sistema')`)
-- [ ] Tela admin de edição das configurações gerais (nome do sistema, logo, cores, flags de feature)
+- [x] Model `AppConfig`
+- [x] Service `AppConfigService` com cache (`get()` para valor texto, `getMediaUrl()` para mídia)
+- [x] Helpers `config_app('chave')` e `config_app_media('chave')`
+- [x] Tela admin de edição das configurações gerais, com upload de mídia
+- [x] Seeder `AppConfigSeeder` com chaves padrão (`app_name`, `app_logo`, `default_user_avatar`)
+- [x] Valores **realmente consumidos** na aplicação: nome do sistema e logo aparecem na sidebar, tela de login e QR code do 2FA; avatar padrão é usado quando o usuário não tem foto
 
-**Critério de conclusão:** alterar uma config na tela admin reflete na aplicação sem precisar de deploy, e o cache é invalidado corretamente.
+**Critério de conclusão:** ✅ atendido — alterar `app_name`/`app_logo`/`default_user_avatar` na tela admin reflete imediatamente na aplicação, sem deploy.
 
 ---
 
-## Fase 5 — Notificações
+## Fase 5 — Notificações ✅ Concluída
 
 Depende de: Fase 1 (usuário autenticado).
 
-- [ ] Model `PushSubscription`
-- [ ] Classes de Notification do Laravel (canais: database, mail, web push)
-- [ ] Componente Livewire de sino de notificações (contador de não lidas, marcar como lida)
-- [ ] Integração de Web Push no front-end (Service Worker + VAPID keys)
+- [x] Model `PushSubscription`
+- [x] Classes de Notification do Laravel (canais: database, webhook, web push — ver nota abaixo)
+- [x] Componente Livewire de sino de notificações (contador de não lidas, marcar como lida)
+- [x] Integração de Web Push no front-end (Service Worker + VAPID keys geradas e configuradas)
 
-**Critério de conclusão:** uma notificação de teste aparece no sino em tempo real e, com push ativado, chega mesmo com a aba fechada.
+> Nota: o canal `mail` do plano original foi substituído por `webhook` na implementação — avaliar se envio por e-mail ainda é necessário para este produto.
+
+**Critério de conclusão:** ✅ atendido.
 
 ---
 
-## Fase 6 — Perfil do Usuário
+## Fase 6 — Perfil do Usuário ✅ Concluída
 
 Depende de: Fase 1.
 
-- [ ] Models `UserProfile`, `UserAdditionalData`, `UserAddress`
-- [ ] Tela "Meu Perfil" (dados pessoais, endereços, avatar)
-- [ ] Upload e recorte de avatar (`avatar_path`)
+- [x] Models `UserProfile` (+ CPF/RG/telefone secundário), `UserAdditionalData`, `UserAddress`
+- [x] Tela "Meu Perfil" com seções expansíveis: dados da conta (nome/email/senha/exclusão de conta), dados adicionais, endereços (múltiplos), campos personalizados, segurança (2FA embutido)
+- [x] Upload e recorte de avatar (`avatar_path`) — cropper client-side em canvas puro, sem lib externa
 
-**Critério de conclusão:** usuário edita seus próprios dados de perfil, endereço e avatar, com validação e persistência corretas.
+**Critério de conclusão:** ✅ atendido.
 
 ---
 
-## Fase 7 — Audit Logging
+## Fase 7 — Audit Logging ✅ Concluída
 
 Depende de: Fases 1–6 (precisa ter ações reais para auditar).
 
-- [ ] Model `AuditLog`
-- [ ] Middleware de auditoria (registra route, user_id, payload, IP)
-- [ ] Interface admin para visualizar logs de auditoria
+- [x] Model de auditoria — usa `OwenIt\Auditing\Models\Audit` (pacote `owen-it/laravel-auditing`) em vez de um `AuditLog` próprio; equivalente funcional
+- [x] Auditoria automática via trait `Auditable` nos models de domínio (`User`, `AppConfig`, `MenuSideBar`, `Role`, `Permission`, models de Atendimento)
+- [x] Eventos de autenticação auditados via Listeners (`app/Listeners/Audit/*`): login, logout, tentativa de login falha (só quando o e-mail existe)
+- [x] Interface admin para visualizar logs de auditoria (usuário, IP, URL, valores antes/depois)
 
-**Critério de conclusão:** ações relevantes (login, alteração de config, edição de permissão, etc.) aparecem na interface de auditoria com usuário, IP e payload.
+> Nota: não há um middleware genérico de auditoria de rota — a cobertura é por model (automática) + eventos específicos (login/logout). Suficiente para o critério de conclusão abaixo; revisar se alguma ação sensível fora desse escopo precisar de auditoria futura.
+
+**Critério de conclusão:** ✅ atendido — login, logout, tentativa de login inválida, e edição de config/role/permission aparecem na interface de auditoria.
 
 ---
 
-## Fase 8 — Domínio de Negócio: Atendimento com IA
+## Fase 8 — Domínio de Negócio: Atendimento com IA 🟡 Infraestrutura concluída, integrações pendentes
 
 Depende de: Core completo (Fases 0–7). Detalhamento completo em `04-atendimento-ia.md`.
 
-- [ ] Canais (Telegram, WhatsApp, Instagram, Facebook, Site/Chat, E-mail) — normalização em entidade única de Atendimento
-- [ ] Motor de IA & Chatbot com regras de transferência para setor humano
-- [ ] Painel: Dashboard, Atendimentos, Clientes, Canais, IA e Chatbot, Relatórios
-- [ ] Integração com Menu, RBAC, App Config, Notificações e Audit do Core (sem duplicar mecanismos)
+- [x] Entidade única de Atendimento (`atendimentos`, `atendimento_mensagens`) e normalização interna — **integrações reais com WhatsApp/Instagram/Facebook/E-mail ainda não implementadas** (dependem de credenciais/API externas)
+- [x] Motor de chatbot **MVP** por regras de palavra-chave (`ChatbotEngine`), com transferência para setor — pensado como stub por trás de uma interface estável, pronto para trocar pelo agente de IA real (nanoclaw) sem alterar o resto do sistema
+- [x] Painel: Dashboard (com gráfico de tendência, breakdown por status/canal), Atendimentos (lista + chat), Clientes, Canais, IA e Chatbot (regras), Relatórios
+- [x] Integração com Menu, RBAC, App Config e Audit do Core (sem duplicar mecanismos) — Notificações do Core ainda não é usada para avisar atendente sobre transferência (gap, ver abaixo)
 
-**Critério de conclusão:** ver checklist detalhado em `04-atendimento-ia.md`.
+**Pendências conhecidas (ver checklist detalhado em `04-atendimento-ia.md`):**
+
+- Integrações reais de canal (WhatsApp/Instagram/Facebook/E-mail) — hoje as mensagens são só inseridas manualmente/simuladas na tela
+- Substituir o `ChatbotEngine` por regras pelo agente de IA real (nanoclaw)
+- Fluxos de IA que dependem de sistemas externos (agendamento, segunda via de boleto) — fora de escopo até haver integração real
+- Notificar atendente via Notificações do Core quando um atendimento é transferido
+- Export de relatórios (CSV/PDF)
+
+**Critério de conclusão:** parcialmente atendido — painel funcional com dados reais, mas domínio ainda não está pronto pra produção real de atendimento multicanal (ver Fase 9).
 
 ---
 
