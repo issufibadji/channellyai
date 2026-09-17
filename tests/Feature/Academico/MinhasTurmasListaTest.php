@@ -10,7 +10,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class MinhasTurmasDoAlunoTest extends TestCase
+class MinhasTurmasListaTest extends TestCase
 {
     use RefreshDatabase;
 

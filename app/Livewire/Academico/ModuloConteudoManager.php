@@ -20,7 +20,9 @@ class ModuloConteudoManager extends Component
     #[Validate('required|string|max:255')]
     public string $moduloNome = '';
 
-    #[Validate('required|in:A1,A2,B1,B2,C1,C2')]
+    #[Validate('required|in:nivel,extra')]
+    public string $categoria = 'nivel';
+
     public string $nivel = 'A1';
 
     #[Validate('required|integer|min:0')]
@@ -45,6 +47,11 @@ class ModuloConteudoManager extends Component
     #[Validate('required|integer|min:0')]
     public int $conteudoOrdem = 0;
 
+    #[Validate('required|integer|min:0')]
+    public int $diasLiberacao = 0;
+
+    public bool $bloqueado = false;
+
     public function mount(Turma $turma): void
     {
         Gate::authorize('manageAlunos', $turma);
@@ -54,7 +61,7 @@ class ModuloConteudoManager extends Component
 
     public function createModulo(): void
     {
-        $this->reset(['moduloId', 'moduloNome', 'nivel', 'moduloOrdem']);
+        $this->reset(['moduloId', 'moduloNome', 'categoria', 'nivel', 'moduloOrdem']);
         $this->resetErrorBag();
         $this->dispatch('open-modal', name: 'modulo-form');
     }
@@ -65,7 +72,8 @@ class ModuloConteudoManager extends Component
 
         $this->moduloId = $modulo->id;
         $this->moduloNome = $modulo->nome;
-        $this->nivel = $modulo->nivel;
+        $this->categoria = $modulo->categoria;
+        $this->nivel = $modulo->nivel ?? 'A1';
         $this->moduloOrdem = $modulo->ordem;
 
         $this->resetErrorBag();
@@ -76,13 +84,22 @@ class ModuloConteudoManager extends Component
     {
         $this->validate([
             'moduloNome' => 'required|string|max:255',
-            'nivel' => 'required|in:A1,A2,B1,B2,C1,C2',
+            'categoria' => 'required|in:nivel,extra',
             'moduloOrdem' => 'required|integer|min:0',
         ]);
 
+        if ($this->categoria === 'nivel') {
+            $this->validate(['nivel' => 'required|in:A1,A2,B1,B2,C1,C2']);
+        }
+
         $this->turma->modulos()->updateOrCreate(
             ['id' => $this->moduloId],
-            ['nome' => $this->moduloNome, 'nivel' => $this->nivel, 'ordem' => $this->moduloOrdem],
+            [
+                'nome' => $this->moduloNome,
+                'categoria' => $this->categoria,
+                'nivel' => $this->categoria === 'nivel' ? $this->nivel : null,
+                'ordem' => $this->moduloOrdem,
+            ],
         );
 
         $this->dispatch('close-modal');
@@ -98,7 +115,7 @@ class ModuloConteudoManager extends Component
 
     public function createConteudo(int $moduloId): void
     {
-        $this->reset(['conteudoId', 'titulo', 'tipo', 'corpo', 'urlExterna', 'conteudoOrdem']);
+        $this->reset(['conteudoId', 'titulo', 'tipo', 'corpo', 'urlExterna', 'conteudoOrdem', 'diasLiberacao', 'bloqueado']);
         $this->moduloAtualId = $moduloId;
         $this->resetErrorBag();
         $this->dispatch('open-modal', name: 'conteudo-form');
@@ -115,6 +132,8 @@ class ModuloConteudoManager extends Component
         $this->corpo = $conteudo->corpo ?? '';
         $this->urlExterna = $conteudo->url_externa ?? '';
         $this->conteudoOrdem = $conteudo->ordem;
+        $this->diasLiberacao = $conteudo->dias_liberacao;
+        $this->bloqueado = $conteudo->bloqueado;
 
         $this->resetErrorBag();
         $this->dispatch('open-modal', name: 'conteudo-form');
@@ -128,6 +147,7 @@ class ModuloConteudoManager extends Component
             'corpo' => 'nullable|string',
             'urlExterna' => 'nullable|url',
             'conteudoOrdem' => 'required|integer|min:0',
+            'diasLiberacao' => 'required|integer|min:0',
         ]);
 
         Conteudo::updateOrCreate(
@@ -139,6 +159,8 @@ class ModuloConteudoManager extends Component
                 'corpo' => $this->corpo ?: null,
                 'url_externa' => $this->urlExterna ?: null,
                 'ordem' => $this->conteudoOrdem,
+                'dias_liberacao' => $this->diasLiberacao,
+                'bloqueado' => $this->bloqueado,
             ],
         );
 

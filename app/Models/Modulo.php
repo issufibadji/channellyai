@@ -11,7 +11,7 @@ class Modulo extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['turma_id', 'nome', 'nivel', 'ordem'];
+    protected $fillable = ['turma_id', 'nome', 'categoria', 'nivel', 'ordem'];
 
     public function turma(): BelongsTo
     {

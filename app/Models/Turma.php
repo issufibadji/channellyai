@@ -63,4 +63,73 @@ class Turma extends Model
     {
         return $query->whereHas('alunos', fn ($q) => $q->where('users.id', $aluno->id));
     }
+
+    /**
+     * Total de aulas "de nível" da turma (ignora módulos categoria=extra).
+     */
+    public function totalAulas(): int
+    {
+        return Conteudo::whereHas(
+            'modulo',
+            fn ($q) => $q->where('turma_id', $this->id)->where('categoria', 'nivel'),
+        )->count();
+    }
+
+    /**
+     * Quantas dessas aulas de nível o aluno já concluiu.
+     */
+    public function aulasConcluidasPor(User $aluno): int
+    {
+        return AlunoProgresso::where('aluno_id', $aluno->id)
+            ->whereHas(
+                'conteudo.modulo',
+                fn ($q) => $q->where('turma_id', $this->id)->where('categoria', 'nivel'),
+            )
+            ->count();
+    }
+
+    /**
+     * Percentual concluído pelo aluno (0 quando a turma não tem aulas
+     * de nível ainda, pra não dividir por zero).
+     */
+    public function percentualConcluido(User $aluno): float
+    {
+        $total = $this->totalAulas();
+
+        return $total === 0 ? 0.0 : round($this->aulasConcluidasPor($aluno) / $total * 100, 1);
+    }
+
+    /**
+     * Primeiro conteúdo disponível e ainda não concluído pelo aluno,
+     * nesta turma. Sem memória de progresso — recalcula toda vez.
+     *
+     * @return array{status: 'proximo'|'tudo-concluido'|'sem-disponivel', url: string}
+     */
+    public function proximoConteudoDisponivelPara(User $aluno): array
+    {
+        $diasDesdeMatricula = null;
+        $existeDisponivel = false;
+
+        foreach ($this->modulos()->with('conteudos')->get() as $modulo) {
+            foreach ($modulo->conteudos as $conteudo) {
+                $diasDesdeMatricula ??= $conteudo->diasDesdeMatricula($aluno, $this);
+
+                if ($conteudo->disponivelPara($aluno, $this, $diasDesdeMatricula)) {
+                    $existeDisponivel = true;
+
+                    if (! $conteudo->concluidoPor($aluno)) {
+                        return [
+                            'status' => 'proximo',
+                            'url' => route('academico.minha-turma.modulo', [$this, $modulo]),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'status' => $existeDisponivel ? 'tudo-concluido' : 'sem-disponivel',
+            'url' => route('academico.minha-turma.turma', $this),
+        ];
+    }
 }

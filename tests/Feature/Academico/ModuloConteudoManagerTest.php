@@ -74,4 +74,57 @@ class ModuloConteudoManagerTest extends TestCase
             ->get(route('academico.turmas.conteudo', $turma))
             ->assertForbidden();
     }
+
+    public function test_professor_can_create_a_modulo_categoria_extra_without_a_nivel(): void
+    {
+        [$professor, $turma] = $this->turmaDoProfessor();
+
+        Livewire::actingAs($professor)
+            ->test(ModuloConteudoManager::class, ['turma' => $turma])
+            ->set('moduloNome', 'Clube de Conversação')
+            ->set('categoria', 'extra')
+            ->call('saveModulo');
+
+        $this->assertDatabaseHas('modulos', [
+            'turma_id' => $turma->id,
+            'nome' => 'Clube de Conversação',
+            'categoria' => 'extra',
+            'nivel' => null,
+        ]);
+    }
+
+    public function test_saving_a_modulo_categoria_nivel_requires_a_nivel(): void
+    {
+        [$professor, $turma] = $this->turmaDoProfessor();
+
+        Livewire::actingAs($professor)
+            ->test(ModuloConteudoManager::class, ['turma' => $turma])
+            ->set('moduloNome', 'Módulo sem nível')
+            ->set('categoria', 'nivel')
+            ->set('nivel', '')
+            ->call('saveModulo')
+            ->assertHasErrors('nivel');
+    }
+
+    public function test_professor_can_set_dias_liberacao_and_bloqueado_on_a_conteudo(): void
+    {
+        [$professor, $turma] = $this->turmaDoProfessor();
+        $modulo = Modulo::factory()->create(['turma_id' => $turma->id]);
+
+        Livewire::actingAs($professor)
+            ->test(ModuloConteudoManager::class, ['turma' => $turma])
+            ->call('createConteudo', $modulo->id)
+            ->set('titulo', 'Aula bônus')
+            ->set('tipo', 'video')
+            ->set('diasLiberacao', 7)
+            ->set('bloqueado', true)
+            ->call('saveConteudo');
+
+        $this->assertDatabaseHas('conteudos', [
+            'modulo_id' => $modulo->id,
+            'titulo' => 'Aula bônus',
+            'dias_liberacao' => 7,
+            'bloqueado' => true,
+        ]);
+    }
 }

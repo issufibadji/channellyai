@@ -13,7 +13,9 @@
                 <div class="flex items-center justify-between mb-3">
                     <div>
                         <h2 class="text-lg font-semibold text-text-primary">{{ $modulo->nome }}</h2>
-                        <span class="text-xs text-text-secondary">Nível {{ $modulo->nivel }} · ordem {{ $modulo->ordem }}</span>
+                        <span class="text-xs text-text-secondary">
+                            {{ $modulo->categoria === 'extra' ? 'Atividade extra' : 'Nível '.$modulo->nivel }} · ordem {{ $modulo->ordem }}
+                        </span>
                     </div>
                     <div class="space-x-3 text-sm">
                         <button wire:click="createConteudo({{ $modulo->id }})" class="text-primary hover:underline">+ Conteúdo</button>
@@ -62,13 +64,24 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium mb-1 text-text-primary">Nível</label>
-                <select wire:model="nivel" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                    @foreach (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as $opcao)
-                        <option value="{{ $opcao }}">{{ $opcao }}</option>
-                    @endforeach
+                <label class="block text-sm font-medium mb-1 text-text-primary">Categoria</label>
+                <select wire:model.live="categoria" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    <option value="nivel">Nível (Básico/Intermediário/Avançado)</option>
+                    <option value="extra">Atividade extra</option>
                 </select>
             </div>
+
+            @if ($categoria === 'nivel')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Nível</label>
+                    <select wire:model="nivel" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                        @foreach (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as $opcao)
+                            <option value="{{ $opcao }}">{{ $opcao }}</option>
+                        @endforeach
+                    </select>
+                    @error('nivel') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+            @endif
 
             <div>
                 <label class="block text-sm font-medium mb-1 text-text-primary">Ordem</label>
@@ -116,6 +129,18 @@
                 <label class="block text-sm font-medium mb-1 text-text-primary">Ordem</label>
                 <input type="number" wire:model="conteudoOrdem" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
             </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1 text-text-primary">Liberar após quantos dias da matrícula</label>
+                <input type="number" wire:model="diasLiberacao" min="0" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                <p class="mt-1 text-xs text-text-secondary">0 = liberado imediatamente após a matrícula.</p>
+                @error('diasLiberacao') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+            </div>
+
+            <label class="flex items-center gap-2 text-sm text-text-secondary">
+                <input type="checkbox" wire:model="bloqueado" class="rounded bg-surface border-surface-border">
+                Bloqueado manualmente (força bloqueio mesmo se o prazo já passou)
+            </label>
 
             <div class="flex justify-end gap-3 pt-2">
                 <x-button variant="secondary" type="button" @click="open = false">Cancelar</x-button>

@@ -21,6 +21,22 @@ class ConteudoFactory extends Factory
             'tipo' => fake()->randomElement(['video', 'pdf', 'texto', 'exercicio', 'link']),
             'corpo' => fake()->paragraph(),
             'ordem' => 0,
+            'dias_liberacao' => 0,
+            'bloqueado' => false,
         ];
+    }
+
+    public function bloqueado(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'bloqueado' => true,
+        ]);
+    }
+
+    public function liberaEm(int $dias): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'dias_liberacao' => $dias,
+        ]);
     }
 }
