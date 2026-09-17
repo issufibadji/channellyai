@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -66,5 +67,17 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     public function additionalData(): HasMany
     {
         return $this->hasMany(UserAdditionalData::class);
+    }
+
+    public function turmasComoProfessor(): HasMany
+    {
+        return $this->hasMany(Turma::class, 'professor_id');
+    }
+
+    public function turmasMatriculadas(): BelongsToMany
+    {
+        return $this->belongsToMany(Turma::class, 'turma_aluno', 'aluno_id', 'turma_id')
+            ->withPivot(['data_matricula', 'status'])
+            ->withTimestamps();
     }
 }

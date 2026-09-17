@@ -13,9 +13,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolePermissionSeeder::class);
+        $this->call(AcademicoPermissionSeeder::class);
         $this->call(MenuSideBarSeeder::class);
 
-        // User::factory(10)->create();
+        User::factory(10)->create();
 
         $testUser = User::factory()->create([
             'name' => 'Test User',

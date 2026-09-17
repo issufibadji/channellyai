@@ -61,5 +61,30 @@ class MenuSideBarSeeder extends Seeder
             ['route_name' => 'admin.announcements.index'],
             ['label' => 'Anúncios', 'icon' => 'megaphone', 'permission' => 'send-notifications', 'order' => 10],
         );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'academico.cursos.index'],
+            ['label' => 'Cursos', 'icon' => 'academic-cap', 'permission' => 'manage-cursos', 'order' => 11],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'academico.turmas.index'],
+            ['label' => 'Turmas', 'icon' => 'rectangle-group', 'permission' => 'manage-turmas', 'order' => 12],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'academico.minhas-turmas.index'],
+            ['label' => 'Minhas Turmas', 'icon' => 'rectangle-group', 'permission' => 'manage-own-turmas', 'order' => 13],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'academico.meus-alunos.index'],
+            ['label' => 'Meus Alunos', 'icon' => 'user-group', 'permission' => 'manage-own-turmas', 'order' => 14],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'academico.minha-turma.index'],
+            ['label' => 'Minha Turma', 'icon' => 'academic-cap', 'permission' => 'view-own-turma', 'order' => 15],
+        );
     }
 }
