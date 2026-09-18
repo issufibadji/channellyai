@@ -9,11 +9,11 @@ class ModuloPolicy
 {
     public function view(User $user, Modulo $modulo): bool
     {
-        return (new TurmaPolicy())->view($user, $modulo->turma);
+        return (new TurmaPolicy)->view($user, $modulo->turma);
     }
 
     public function manage(User $user, Modulo $modulo): bool
     {
-        return (new TurmaPolicy())->manageAlunos($user, $modulo->turma);
+        return (new TurmaPolicy)->manageConteudo($user, $modulo->turma);
     }
 }

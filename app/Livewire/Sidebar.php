@@ -23,11 +23,22 @@ class Sidebar extends Component
             $item->setRelation('children', $item->children->filter(fn ($child) => $this->visible($child)));
         });
 
-        return view('livewire.sidebar', ['items' => $items]);
+        return view('livewire.sidebar', ['groups' => $items->groupBy(fn ($item) => $item->group ?: '')]);
     }
 
+    /**
+     * O admin tem bypass de permissão (Gate::before) e por isso enxergaria
+     * qualquer item permissionado, incluindo a seção Acadêmico — que é
+     * operacional (professor/aluno), não administrativa. Escondemos essa
+     * seção do admin na sidebar; o acesso direto por URL continua liberado
+     * pelo bypass, isso é só uma questão de poluição visual do menu.
+     */
     private function visible(MenuSideBar $item): bool
     {
+        if ($item->group === 'Acadêmico' && Auth::user()?->hasRole('admin')) {
+            return false;
+        }
+
         return ! $item->permission || Auth::user()?->can($item->permission);
     }
 }

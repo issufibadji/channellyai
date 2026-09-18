@@ -5,6 +5,9 @@ namespace App\Livewire\Admin;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\UserAccountCreated;
+use App\Policies\UserPolicy;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -58,7 +61,7 @@ class UserManager extends Component
 
     public function create(): void
     {
-        abort_unless(auth()->user()->can('create-users'), 403);
+        Gate::authorize('create', User::class);
 
         $this->reset(['userId', 'name', 'email', 'password', 'roles']);
         $this->resetErrorBag();
@@ -67,9 +70,9 @@ class UserManager extends Component
 
     public function edit(int $id): void
     {
-        abort_unless(auth()->user()->can('edit-users'), 403);
-
         $user = User::with('roles')->findOrFail($id);
+
+        Gate::authorize('update', $user);
 
         $this->userId = $user->id;
         $this->name = $user->name;
@@ -83,7 +86,11 @@ class UserManager extends Component
 
     public function save(): void
     {
-        abort_unless(auth()->user()->can($this->userId ? 'edit-users' : 'create-users'), 403);
+        $isNew = ! $this->userId;
+
+        $user = $isNew ? new User : User::findOrFail($this->userId);
+
+        Gate::authorize($isNew ? 'create' : 'update', $isNew ? User::class : $user);
 
         $this->validate([
             'name' => 'required|string|max:255',
@@ -91,9 +98,16 @@ class UserManager extends Component
             'password' => $this->userId ? 'nullable|string|min:8' : 'required|string|min:8',
         ]);
 
-        $isNew = ! $this->userId;
+        // Um manager nunca pode atribuir um papel fora do que ele mesmo
+        // gerencia — senão ele se auto-promove (ou promove alguém) a
+        // admin/manager. Validação de servidor, não só esconder no formulário.
+        if (! Auth::user()->hasRole('admin')) {
+            $this->validate([
+                'roles' => ['array'],
+                'roles.*' => Rule::in(UserPolicy::PAPEIS_GERENCIAVEIS_POR_MANAGER),
+            ]);
+        }
 
-        $user = $isNew ? new User : User::findOrFail($this->userId);
         $user->name = $this->name;
         $user->email = $this->email;
 
@@ -118,32 +132,39 @@ class UserManager extends Component
 
     public function toggleActive(int $id): void
     {
-        abort_unless(auth()->user()->can('edit-users'), 403);
-
         $user = User::findOrFail($id);
+
+        Gate::authorize('update', $user);
+
         $user->forceFill(['active' => ! $user->active])->save();
     }
 
     public function toggleRequires2fa(int $id): void
     {
-        abort_unless(auth()->user()->can('edit-users'), 403);
-
         $user = User::findOrFail($id);
+
+        Gate::authorize('update', $user);
+
         $user->forceFill(['requires_2fa' => ! $user->requires_2fa])->save();
     }
 
     public function delete(int $id): void
     {
-        abort_unless(auth()->user()->can('delete-users'), 403);
+        $user = User::findOrFail($id);
 
-        User::findOrFail($id)->delete();
+        Gate::authorize('delete', $user);
+
+        $user->delete();
 
         session()->flash('success', 'Usuário removido.');
     }
 
     public function render()
     {
+        $ator = Auth::user();
+
         $users = User::with('roles')
+            ->gerenciavelPor($ator)
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', "%{$this->search}%")
@@ -158,9 +179,13 @@ class UserManager extends Component
             ->orderBy('name')
             ->paginate(15);
 
+        $allRoles = $ator->hasRole('admin')
+            ? Role::orderBy('name')->get()
+            : Role::whereIn('name', UserPolicy::PAPEIS_GERENCIAVEIS_POR_MANAGER)->orderBy('name')->get();
+
         return view('livewire.admin.user-manager', [
             'users' => $users,
-            'allRoles' => Role::orderBy('name')->get(),
+            'allRoles' => $allRoles,
         ]);
     }
 }

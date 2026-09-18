@@ -76,6 +76,22 @@ class MenuSideBarManagerTest extends TestCase
         $this->assertDatabaseMissing('menu_side_bars', ['label' => 'Chatbot']);
     }
 
+    public function test_admin_can_create_a_menu_item_with_a_section_group(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(MenuSideBarManager::class)
+            ->set('label', 'Relatórios')
+            ->set('group', 'Acadêmico')
+            ->set('routeName', 'dashboard')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('menu_side_bars', ['label' => 'Relatórios', 'group' => 'Acadêmico']);
+    }
+
     public function test_admin_can_update_a_menu_item(): void
     {
         $admin = User::factory()->create();

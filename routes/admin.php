@@ -8,6 +8,7 @@ use App\Livewire\Admin\PermissionManager;
 use App\Livewire\Admin\RoleManager;
 use App\Livewire\Admin\RoleUserLinker;
 use App\Livewire\Admin\UserManager;
+use App\Livewire\AjudaManager;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'check2fa'])->group(function () {
@@ -33,4 +34,7 @@ Route::middleware(['auth', 'verified', 'check2fa'])->group(function () {
 
     Route::middleware('checkPermission:send-notifications')
         ->get('admin/announcements', AnnouncementManager::class)->name('admin.announcements.index');
+
+    Route::middleware('checkPermission:manage-ajuda')
+        ->get('admin/ajuda', AjudaManager::class)->name('admin.ajuda.index');
 });

@@ -54,7 +54,7 @@ class ModuloConteudoManager extends Component
 
     public function mount(Turma $turma): void
     {
-        Gate::authorize('manageAlunos', $turma);
+        Gate::authorize('manageConteudo', $turma);
 
         $this->turma = $turma;
     }

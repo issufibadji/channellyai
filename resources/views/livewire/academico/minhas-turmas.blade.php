@@ -14,9 +14,11 @@
                     <a href="{{ route('academico.turmas.conteudo', $turma) }}" class="text-primary hover:underline">
                         Módulos e conteúdo ({{ $turma->modulos->count() }})
                     </a>
-                    <a href="{{ route('academico.turmas.matricula', $turma) }}" class="text-primary hover:underline">
-                        Matrícula
-                    </a>
+                    @can('manage-matriculas')
+                        <a href="{{ route('academico.turmas.matricula', $turma) }}" class="text-primary hover:underline">
+                            Matrícula
+                        </a>
+                    @endcan
                 </div>
             </x-card>
         @empty

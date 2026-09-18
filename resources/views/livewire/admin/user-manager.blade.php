@@ -1,7 +1,7 @@
 <div>
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-semibold text-text-primary">Usuários</h1>
-        @can('create-users')
+        @can('create', \App\Models\User::class)
             <x-button wire:click="create">+ Usuário</x-button>
         @endcan
     </div>
@@ -66,7 +66,7 @@
                     </x-badge>
                 </td>
                 <td class="px-4 py-3 text-right whitespace-nowrap space-x-3">
-                    @can('edit-users')
+                    @can('update', $user)
                         <button wire:click="edit({{ $user->id }})" class="text-primary hover:underline text-sm">Editar</button>
                         <button wire:click="toggleActive({{ $user->id }})" class="text-text-secondary hover:underline text-sm">
                             {{ $user->active ? 'Desativar' : 'Ativar' }}
@@ -75,7 +75,7 @@
                             {{ $user->requires_2fa ? 'Não exigir 2FA' : 'Exigir 2FA' }}
                         </button>
                     @endcan
-                    @can('delete-users')
+                    @can('delete', $user)
                         <button
                             wire:click="delete({{ $user->id }})"
                             wire:confirm="Remover este usuário?"

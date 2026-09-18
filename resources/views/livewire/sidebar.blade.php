@@ -11,7 +11,21 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto px-3 space-y-1">
-        @foreach ($items as $item)
+        @foreach ($groups as $group => $groupItems)
+            @if ($group)
+                <p
+                    x-show="!collapsed"
+                    x-cloak
+                    class="px-3 {{ $loop->first ? 'pt-1' : 'pt-4' }} pb-1 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/70 whitespace-nowrap"
+                >
+                    {{ $group }}
+                </p>
+                @unless ($loop->first)
+                    <div x-show="collapsed" x-cloak class="border-t border-surface-border mx-2 my-2"></div>
+                @endunless
+            @endif
+
+            @foreach ($groupItems as $item)
             @if ($item->children->isNotEmpty())
                 <div x-data="{ open: {{ $item->children->contains(fn ($child) => request()->routeIs($child->route_name)) ? 'true' : 'false' }} }">
                     <button
@@ -52,6 +66,7 @@
                     <span x-show="!collapsed" x-cloak class="whitespace-nowrap">{{ $item->label }}</span>
                 </a>
             @endif
+            @endforeach
         @endforeach
     </nav>
 

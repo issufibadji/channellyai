@@ -89,8 +89,8 @@ class TurmaScopeTest extends TestCase
 
     public function test_policy_denies_a_professor_from_managing_another_professors_turma(): void
     {
-        $this->assertTrue(Gate::forUser($this->professorA)->allows('manageAlunos', $this->turmaA));
-        $this->assertFalse(Gate::forUser($this->professorB)->allows('manageAlunos', $this->turmaA));
+        $this->assertTrue(Gate::forUser($this->professorA)->allows('manageConteudo', $this->turmaA));
+        $this->assertFalse(Gate::forUser($this->professorB)->allows('manageConteudo', $this->turmaA));
     }
 
     public function test_policy_denies_a_student_from_viewing_a_turma_they_are_not_enrolled_in(): void
@@ -105,7 +105,7 @@ class TurmaScopeTest extends TestCase
         $admin->assignRole('admin');
 
         $this->assertTrue(Gate::forUser($admin)->allows('view', $this->turmaA));
-        $this->assertTrue(Gate::forUser($admin)->allows('manageAlunos', $this->turmaB));
+        $this->assertTrue(Gate::forUser($admin)->allows('manageConteudo', $this->turmaB));
     }
 
     public function test_professor_gets_403_accessing_the_conteudo_screen_of_another_professors_turma(): void

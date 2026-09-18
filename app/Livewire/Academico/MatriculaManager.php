@@ -19,7 +19,7 @@ class MatriculaManager extends Component
 
     public function mount(Turma $turma): void
     {
-        Gate::authorize('manageAlunos', $turma);
+        Gate::authorize('manageMatricula', $turma);
 
         $this->turma = $turma;
     }

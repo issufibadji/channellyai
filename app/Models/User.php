@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Concerns\HasPushSubscriptions;
+use App\Policies\UserPolicy;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -79,5 +81,22 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
         return $this->belongsToMany(Turma::class, 'turma_aluno', 'aluno_id', 'turma_id')
             ->withPivot(['data_matricula', 'status'])
             ->withTimestamps();
+    }
+
+    /**
+     * Escopo: usuários que $ator pode gerenciar. Admin vê todo mundo; um
+     * manager só vê usuários com papel abaixo dele (professor/aluno/operator
+     * — nunca admin/outro manager). Ver UserPolicy::PAPEIS_GERENCIAVEIS_POR_MANAGER.
+     */
+    public function scopeGerenciavelPor(Builder $query, User $ator): Builder
+    {
+        if ($ator->hasRole('admin')) {
+            return $query;
+        }
+
+        return $query->whereDoesntHave(
+            'roles',
+            fn ($q) => $q->whereNotIn('name', UserPolicy::PAPEIS_GERENCIAVEIS_POR_MANAGER),
+        );
     }
 }

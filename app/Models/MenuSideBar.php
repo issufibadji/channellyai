@@ -12,7 +12,7 @@ class MenuSideBar extends Model implements AuditableContract
 {
     use Auditable;
 
-    protected $fillable = ['parent_id', 'label', 'icon', 'route_name', 'permission', 'order'];
+    protected $fillable = ['parent_id', 'label', 'group', 'icon', 'route_name', 'permission', 'order'];
 
     public function parent(): BelongsTo
     {
