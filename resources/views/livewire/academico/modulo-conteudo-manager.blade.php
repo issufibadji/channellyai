@@ -34,7 +34,12 @@
                     @foreach ($modulo->conteudos as $conteudo)
                         <tr>
                             <td class="px-4 py-3">{{ $conteudo->titulo }}</td>
-                            <td class="px-4 py-3"><x-badge variant="primary">{{ $conteudo->tipo }}</x-badge></td>
+                            <td class="px-4 py-3">
+                                <x-badge variant="primary">{{ $conteudo->tipo }}</x-badge>
+                                @if ($conteudo->tipo === 'exercicio' && $conteudo->exercicio_subtipo)
+                                    <x-badge>{{ $conteudo->exercicio_subtipo }}</x-badge>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-text-secondary">{{ $conteudo->ordem }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap space-x-3">
                                 <button wire:click="editConteudo({{ $conteudo->id }})" class="text-primary hover:underline text-sm">Editar</button>
@@ -105,7 +110,7 @@
 
             <div>
                 <label class="block text-sm font-medium mb-1 text-text-primary">Tipo</label>
-                <select wire:model="tipo" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                <select wire:model.live="tipo" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     <option value="video">Vídeo</option>
                     <option value="pdf">PDF</option>
                     <option value="texto">Texto</option>
@@ -114,16 +119,110 @@
                 </select>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium mb-1 text-text-primary">Corpo (texto livre)</label>
-                <textarea wire:model="corpo" rows="3" class="w-full rounded-md bg-surface border-surface-border text-text-primary"></textarea>
-            </div>
+            @if ($tipo === 'texto')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Corpo (texto livre)</label>
+                    <textarea wire:model="corpo" rows="4" class="w-full rounded-md bg-surface border-surface-border text-text-primary"></textarea>
+                    @error('corpo') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+            @endif
 
-            <div>
-                <label class="block text-sm font-medium mb-1 text-text-primary">URL externa (quando tipo = link)</label>
-                <input type="text" wire:model="urlExterna" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                @error('urlExterna') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
-            </div>
+            @if ($tipo === 'video')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Link do YouTube ou Vimeo</label>
+                    <input type="text" wire:model="urlExterna" placeholder="https://youtube.com/watch?v=..." class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    @error('urlExterna') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+            @endif
+
+            @if ($tipo === 'link')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">URL externa</label>
+                    <input type="text" wire:model="urlExterna" placeholder="https://..." class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    @error('urlExterna') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+            @endif
+
+            @if ($tipo === 'pdf')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Arquivo PDF</label>
+                    <input type="file" wire:model="arquivo" accept="application/pdf" class="w-full text-sm text-text-secondary">
+                    <div wire:loading wire:target="arquivo" class="text-xs text-text-secondary mt-1">Enviando...</div>
+                    @error('arquivo') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                    @if ($conteudoId && ! $arquivo)
+                        <p class="mt-1 text-xs text-text-secondary">Deixe em branco pra manter o arquivo atual.</p>
+                    @endif
+                </div>
+            @endif
+
+            @if ($tipo === 'exercicio')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Tipo de exercício</label>
+                    <select wire:model.live="exercicioSubtipo" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                        <option value="anexo">Anexo (arquivo)</option>
+                        <option value="quiz">Quiz interativo</option>
+                    </select>
+                    @error('exercicioSubtipo') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+
+                @if ($exercicioSubtipo === 'anexo')
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-text-primary">Arquivo (PDF, DOC ou DOCX)</label>
+                        <input type="file" wire:model="arquivo" class="w-full text-sm text-text-secondary">
+                        <div wire:loading wire:target="arquivo" class="text-xs text-text-secondary mt-1">Enviando...</div>
+                        @error('arquivo') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                        @if ($conteudoId && ! $arquivo)
+                            <p class="mt-1 text-xs text-text-secondary">Deixe em branco pra manter o arquivo atual.</p>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($exercicioSubtipo === 'quiz')
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-medium text-text-primary">Perguntas</label>
+                            <button type="button" wire:click="adicionarPergunta" class="text-primary hover:underline text-sm">+ Pergunta</button>
+                        </div>
+                        @error('perguntas') <p class="text-sm text-danger">{{ $message }}</p> @enderror
+
+                        @foreach ($perguntas as $i => $pergunta)
+                            <div class="rounded-lg border border-surface-border p-3 space-y-3">
+                                <div class="flex items-start gap-2">
+                                    <div class="flex-1">
+                                        <input
+                                            type="text"
+                                            wire:model="perguntas.{{ $i }}.enunciado"
+                                            placeholder="Enunciado da pergunta"
+                                            class="w-full rounded-md bg-surface border-surface-border text-text-primary text-sm"
+                                        >
+                                        @error("perguntas.{$i}.enunciado") <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                                    </div>
+                                    <button type="button" wire:click="removerPergunta({{ $i }})" class="text-danger hover:underline text-xs mt-2">Remover</button>
+                                </div>
+
+                                <div class="pl-3 space-y-2">
+                                    @error("perguntas.{$i}.opcoes") <p class="text-xs text-danger">{{ $message }}</p> @enderror
+                                    @foreach ($pergunta['opcoes'] as $j => $opcao)
+                                        <div class="flex items-center gap-2">
+                                            <input type="checkbox" wire:model="perguntas.{{ $i }}.opcoes.{{ $j }}.correta" class="rounded bg-surface border-surface-border" title="Opção correta">
+                                            <input
+                                                type="text"
+                                                wire:model="perguntas.{{ $i }}.opcoes.{{ $j }}.texto"
+                                                placeholder="Texto da opção"
+                                                class="flex-1 rounded-md bg-surface border-surface-border text-text-primary text-sm"
+                                            >
+                                            <button type="button" wire:click="removerOpcao({{ $i }}, {{ $j }})" class="text-danger hover:underline text-xs">Remover</button>
+                                        </div>
+                                        @error("perguntas.{$i}.opcoes.{$j}.texto") <p class="text-xs text-danger">{{ $message }}</p> @enderror
+                                    @endforeach
+
+                                    <button type="button" wire:click="adicionarOpcao({{ $i }})" class="text-primary hover:underline text-xs">+ Opção</button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            @endif
 
             <div>
                 <label class="block text-sm font-medium mb-1 text-text-primary">Ordem</label>

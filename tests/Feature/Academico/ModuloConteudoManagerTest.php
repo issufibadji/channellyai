@@ -58,6 +58,7 @@ class ModuloConteudoManagerTest extends TestCase
             ->call('createConteudo', $modulo->id)
             ->set('titulo', 'Aula 1')
             ->set('tipo', 'video')
+            ->set('urlExterna', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
             ->call('saveConteudo');
 
         $this->assertDatabaseHas('conteudos', ['modulo_id' => $modulo->id, 'titulo' => 'Aula 1']);
@@ -116,6 +117,7 @@ class ModuloConteudoManagerTest extends TestCase
             ->call('createConteudo', $modulo->id)
             ->set('titulo', 'Aula bônus')
             ->set('tipo', 'video')
+            ->set('urlExterna', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
             ->set('diasLiberacao', 7)
             ->set('bloqueado', true)
             ->call('saveConteudo');

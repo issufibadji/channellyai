@@ -13,7 +13,7 @@ class Conteudo extends Model
     use HasFactory;
 
     protected $fillable = [
-        'modulo_id', 'titulo', 'tipo', 'corpo', 'arquivo_path', 'url_externa',
+        'modulo_id', 'titulo', 'tipo', 'exercicio_subtipo', 'corpo', 'arquivo_path', 'url_externa',
         'ordem', 'dias_liberacao', 'bloqueado',
     ];
 
@@ -32,6 +32,11 @@ class Conteudo extends Model
     public function progressos(): HasMany
     {
         return $this->hasMany(AlunoProgresso::class);
+    }
+
+    public function perguntas(): HasMany
+    {
+        return $this->hasMany(ExercicioPergunta::class)->orderBy('ordem');
     }
 
     /**
@@ -78,5 +83,55 @@ class Conteudo extends Model
         $pivotDate = $turma->alunos()->where('users.id', $aluno->id)->first()?->pivot->data_matricula;
 
         return $pivotDate ? Carbon::parse($pivotDate)->diffInDays(now()) : 0;
+    }
+
+    /**
+     * Percentual de acerto do aluno no quiz deste conteúdo. Uma pergunta só
+     * conta como certa se o conjunto de opções marcadas for EXATAMENTE igual
+     * ao conjunto de opções corretas — nem a mais, nem a menos.
+     */
+    public function corrigirRespostas(User $aluno): float
+    {
+        $perguntas = $this->perguntas()->with('opcoes')->get();
+
+        if ($perguntas->isEmpty()) {
+            return 0.0;
+        }
+
+        $opcaoIds = $perguntas->pluck('opcoes')->flatten()->pluck('id');
+
+        $selecionadas = AlunoRespostaOpcao::where('aluno_id', $aluno->id)
+            ->whereIn('opcao_id', $opcaoIds)
+            ->pluck('opcao_id');
+
+        $certas = $perguntas->filter(function (ExercicioPergunta $pergunta) use ($selecionadas) {
+            $corretas = $pergunta->opcoes->where('correta', true)->pluck('id')->sort()->values();
+            $marcadas = $pergunta->opcoes->pluck('id')->intersect($selecionadas)->sort()->values();
+
+            return $corretas->all() === $marcadas->all();
+        })->count();
+
+        return round($certas / $perguntas->count() * 100, 1);
+    }
+
+    /**
+     * URL de embed pra vídeo do YouTube/Vimeo a partir de url_externa, ou
+     * null se não reconhecer o padrão (a view trata como link simples).
+     */
+    public function embedUrlVideo(): ?string
+    {
+        if (! $this->url_externa) {
+            return null;
+        }
+
+        if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/', $this->url_externa, $m)) {
+            return "https://www.youtube.com/embed/{$m[1]}";
+        }
+
+        if (preg_match('/vimeo\.com\/(\d+)/', $this->url_externa, $m)) {
+            return "https://player.vimeo.com/video/{$m[1]}";
+        }
+
+        return null;
     }
 }

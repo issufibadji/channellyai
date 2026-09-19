@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -130,6 +131,49 @@ class Turma extends Model
         return [
             'status' => $existeDisponivel ? 'tudo-concluido' : 'sem-disponivel',
             'url' => route('academico.minha-turma.turma', $this),
+        ];
+    }
+
+    /**
+     * Sequência global de conteúdos da turma, só dos módulos categoria=nivel
+     * (Atividades Extras nunca entra na trilha), ordenada por nível do
+     * módulo, ordem do módulo, ordem do conteúdo. A1..C2 ordena certo como
+     * string simples, não precisa de mapa de nível custom.
+     *
+     * @return Collection<int, Conteudo>
+     */
+    public function sequenciaConteudos(): Collection
+    {
+        return Conteudo::query()
+            ->join('modulos', 'modulos.id', '=', 'conteudos.modulo_id')
+            ->where('modulos.turma_id', $this->id)
+            ->where('modulos.categoria', 'nivel')
+            ->orderBy('modulos.nivel')
+            ->orderBy('modulos.ordem')
+            ->orderBy('conteudos.ordem')
+            ->select('conteudos.*')
+            ->get();
+    }
+
+    /**
+     * Conteúdo anterior/próximo na trilha, relativo a $conteudo. Ambos null
+     * nas pontas da trilha, e também se $conteudo não pertence a ela (ex.:
+     * está num módulo categoria=extra).
+     *
+     * @return array{anterior: ?Conteudo, proximo: ?Conteudo}
+     */
+    public function vizinhosDoConteudo(Conteudo $conteudo): array
+    {
+        $sequencia = $this->sequenciaConteudos();
+        $indice = $sequencia->search(fn (Conteudo $item) => $item->id === $conteudo->id);
+
+        if ($indice === false) {
+            return ['anterior' => null, 'proximo' => null];
+        }
+
+        return [
+            'anterior' => $indice > 0 ? $sequencia[$indice - 1] : null,
+            'proximo' => $indice < $sequencia->count() - 1 ? $sequencia[$indice + 1] : null,
         ];
     }
 }
