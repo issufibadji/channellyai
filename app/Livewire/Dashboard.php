@@ -37,12 +37,28 @@ class Dashboard extends Component
             ->orderByDesc('turma_aluno.data_matricula')
             ->first();
 
+        $total = $turmaRecente?->totalAulas() ?? 0;
+        $concluidas = $turmaRecente?->aulasConcluidasPor($aluno) ?? 0;
+
         return [
             'turmasDoAluno' => Turma::doAluno($aluno)->with('curso')->orderBy('nome')->get(),
             'turmaRecente' => $turmaRecente,
             'continuar' => $turmaRecente
                 ? $turmaRecente->proximoConteudoDisponivelPara($aluno)
                 : ['status' => 'sem-turma', 'url' => null],
+            'resumo' => [
+                'total' => $total,
+                'concluidas' => $concluidas,
+                'restantes' => max(0, $total - $concluidas),
+                'percentual' => $turmaRecente?->percentualConcluido($aluno) ?? 0.0,
+            ],
+            // Atividades Extras vira o banner de "bônus", então sai dos carrosséis.
+            'secoes' => $turmaRecente
+                ? collect($turmaRecente->vitrinePara($aluno))->reject(fn ($secao) => $secao['titulo'] === 'Atividades Extras')->values()->all()
+                : [],
+            'bonus' => $turmaRecente
+                ? $turmaRecente->modulos()->where('categoria', 'extra')->pluck('nome')
+                : collect(),
         ];
     }
 }

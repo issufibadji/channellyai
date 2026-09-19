@@ -89,6 +89,29 @@
             @endif
 
             <div>
+                <label class="block text-sm font-medium mb-1 text-text-primary">Seção (agrupamento na vitrine do aluno)</label>
+                <input type="text" wire:model="secao" list="secoes-existentes" placeholder="ex.: Mapas Mentais, Vídeos Curtos" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                <datalist id="secoes-existentes">
+                    @foreach ($secoesExistentes as $secaoExistente)
+                        <option value="{{ $secaoExistente }}"></option>
+                    @endforeach
+                </datalist>
+                <p class="mt-1 text-xs text-text-secondary">Módulos com a mesma seção aparecem no mesmo carrossel. Em branco = "Aulas" (nível) ou "Atividades Extras".</p>
+                @error('secao') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1 text-text-primary">Capa (JPG, PNG ou WEBP, vertical 3:4 fica melhor)</label>
+                <input type="file" wire:model="capa" accept="image/jpeg,image/png,image/webp" class="w-full text-sm text-text-secondary">
+                <div wire:loading wire:target="capa" class="text-xs text-text-secondary mt-1">Enviando...</div>
+                @error('capa') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                @if ($capaAtual && ! $capa)
+                    <img src="{{ asset('storage/'.$capaAtual) }}" alt="Capa atual" class="mt-2 h-24 rounded-md object-cover">
+                    <p class="mt-1 text-xs text-text-secondary">Deixe em branco pra manter a capa atual.</p>
+                @endif
+            </div>
+
+            <div>
                 <label class="block text-sm font-medium mb-1 text-text-primary">Ordem</label>
                 <input type="number" wire:model="moduloOrdem" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
             </div>
@@ -111,7 +134,8 @@
             <div>
                 <label class="block text-sm font-medium mb-1 text-text-primary">Tipo</label>
                 <select wire:model.live="tipo" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                    <option value="video">Vídeo</option>
+                    <option value="video">Vídeo (YouTube/Vimeo)</option>
+                    <option value="video_curto">Vídeo curto (upload, 30s a 1min)</option>
                     <option value="pdf">PDF</option>
                     <option value="texto">Texto</option>
                     <option value="exercicio">Exercício</option>
@@ -140,6 +164,19 @@
                     <label class="block text-sm font-medium mb-1 text-text-primary">URL externa</label>
                     <input type="text" wire:model="urlExterna" placeholder="https://..." class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     @error('urlExterna') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+            @endif
+
+            @if ($tipo === 'video_curto')
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Arquivo de vídeo (MP4, WEBM ou MOV — até 50MB)</label>
+                    <input type="file" wire:model="arquivo" accept="video/mp4,video/webm,video/quicktime" class="w-full text-sm text-text-secondary">
+                    <div wire:loading wire:target="arquivo" class="text-xs text-text-secondary mt-1">Enviando...</div>
+                    @error('arquivo') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                    <p class="mt-1 text-xs text-text-secondary">Pensado pra vídeos de 30 segundos a 1 minuto (formato vertical funciona bem no celular). O limite é de tamanho, não de duração.</p>
+                    @if ($conteudoId && ! $arquivo)
+                        <p class="mt-1 text-xs text-text-secondary">Deixe em branco pra manter o vídeo atual.</p>
+                    @endif
                 </div>
             @endif
 

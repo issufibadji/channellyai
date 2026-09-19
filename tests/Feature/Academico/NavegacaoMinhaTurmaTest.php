@@ -67,14 +67,24 @@ class NavegacaoMinhaTurmaTest extends TestCase
 
     public function test_abas_filtram_modulos_pelos_niveis_certos(): void
     {
-        $moduloA1 = Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'A1', 'nome' => 'Modulo A1']);
-        $moduloB1 = Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'B1', 'nome' => 'Modulo B1']);
-        $moduloC1 = Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'C1', 'nome' => 'Modulo C1']);
+        Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'A1', 'nome' => 'Modulo A1']);
+        Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'B1', 'nome' => 'Modulo B1']);
+        Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'C1', 'nome' => 'Modulo C1']);
 
         $basico = $this->actingAs($this->alunoMatriculado)->get(route('academico.minha-turma.turma', $this->turma));
         $basico->assertSee('Modulo A1');
         $basico->assertDontSee('Modulo B1');
         $basico->assertDontSee('Modulo C1');
+    }
+
+    public function test_modulos_com_a_mesma_secao_ficam_no_mesmo_carrossel(): void
+    {
+        Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'A1', 'nome' => 'Mapa A1', 'secao' => 'Mapas Mentais']);
+        Modulo::factory()->create(['turma_id' => $this->turma->id, 'nivel' => 'A1', 'nome' => 'Aula A1']);
+
+        $secoes = $this->turma->vitrinePara($this->alunoMatriculado);
+
+        $this->assertSame(['Aulas', 'Mapas Mentais'], array_column($secoes, 'titulo'));
     }
 
     public function test_modulos_extra_aparecem_separados_das_abas_de_nivel(): void

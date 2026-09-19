@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Academico\Aluno\Aula;
 use App\Livewire\Academico\Aluno\MinhasTurmasLista;
 use App\Livewire\Academico\Aluno\ModuloConteudos;
 use App\Livewire\Academico\Aluno\TurmaModulos;
@@ -31,5 +32,6 @@ Route::middleware(['auth', 'verified', 'check2fa'])->group(function () {
         Route::get('academico/minha-turma', MinhasTurmasLista::class)->name('academico.minha-turma.index');
         Route::get('academico/minha-turma/{turma}', TurmaModulos::class)->name('academico.minha-turma.turma');
         Route::get('academico/minha-turma/{turma}/modulo/{modulo}', ModuloConteudos::class)->name('academico.minha-turma.modulo');
+        Route::get('academico/minha-turma/{turma}/aula/{conteudo}', Aula::class)->name('academico.minha-turma.aula');
     });
 });

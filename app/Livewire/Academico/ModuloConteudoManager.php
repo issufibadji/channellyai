@@ -29,6 +29,12 @@ class ModuloConteudoManager extends Component
 
     public string $nivel = 'A1';
 
+    public string $secao = '';
+
+    public $capa = null;
+
+    public ?string $capaAtual = null;
+
     #[Validate('required|integer|min:0')]
     public int $moduloOrdem = 0;
 
@@ -39,7 +45,7 @@ class ModuloConteudoManager extends Component
     #[Validate('required|string|max:255')]
     public string $titulo = '';
 
-    #[Validate('required|in:video,pdf,texto,exercicio,link')]
+    #[Validate('required|in:video,video_curto,pdf,texto,exercicio,link')]
     public string $tipo = 'texto';
 
     public string $exercicioSubtipo = 'anexo';
@@ -74,7 +80,7 @@ class ModuloConteudoManager extends Component
 
     public function createModulo(): void
     {
-        $this->reset(['moduloId', 'moduloNome', 'categoria', 'nivel', 'moduloOrdem']);
+        $this->reset(['moduloId', 'moduloNome', 'categoria', 'nivel', 'secao', 'capa', 'capaAtual', 'moduloOrdem']);
         $this->resetErrorBag();
         $this->dispatch('open-modal', name: 'modulo-form');
     }
@@ -87,6 +93,9 @@ class ModuloConteudoManager extends Component
         $this->moduloNome = $modulo->nome;
         $this->categoria = $modulo->categoria;
         $this->nivel = $modulo->nivel ?? 'A1';
+        $this->secao = $modulo->secao ?? '';
+        $this->capa = null;
+        $this->capaAtual = $modulo->capa_path;
         $this->moduloOrdem = $modulo->ordem;
 
         $this->resetErrorBag();
@@ -98,6 +107,8 @@ class ModuloConteudoManager extends Component
         $this->validate([
             'moduloNome' => 'required|string|max:255',
             'categoria' => 'required|in:nivel,extra',
+            'secao' => 'nullable|string|max:100',
+            'capa' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
             'moduloOrdem' => 'required|integer|min:0',
         ]);
 
@@ -105,15 +116,24 @@ class ModuloConteudoManager extends Component
             $this->validate(['nivel' => 'required|in:A1,A2,B1,B2,C1,C2']);
         }
 
-        $this->turma->modulos()->updateOrCreate(
+        $modulo = $this->turma->modulos()->updateOrCreate(
             ['id' => $this->moduloId],
             [
                 'nome' => $this->moduloNome,
                 'categoria' => $this->categoria,
+                'secao' => $this->secao ?: null,
                 'nivel' => $this->categoria === 'nivel' ? $this->nivel : null,
                 'ordem' => $this->moduloOrdem,
             ],
         );
+
+        if ($this->capa) {
+            if ($modulo->capa_path) {
+                Storage::disk('public')->delete($modulo->capa_path);
+            }
+
+            $modulo->update(['capa_path' => $this->capa->store('modulos-capas', 'public')]);
+        }
 
         $this->dispatch('close-modal');
         session()->flash('success', 'Módulo salvo com sucesso.');
@@ -121,7 +141,13 @@ class ModuloConteudoManager extends Component
 
     public function deleteModulo(int $id): void
     {
-        Modulo::findOrFail($id)->delete();
+        $modulo = Modulo::findOrFail($id);
+
+        if ($modulo->capa_path) {
+            Storage::disk('public')->delete($modulo->capa_path);
+        }
+
+        $modulo->delete();
 
         session()->flash('success', 'Módulo removido.');
     }
@@ -202,7 +228,7 @@ class ModuloConteudoManager extends Component
     {
         $this->validate([
             'titulo' => 'required|string|max:255',
-            'tipo' => 'required|in:video,pdf,texto,exercicio,link',
+            'tipo' => 'required|in:video,video_curto,pdf,texto,exercicio,link',
             'conteudoOrdem' => 'required|integer|min:0',
             'diasLiberacao' => 'required|integer|min:0',
         ]);
@@ -215,11 +241,17 @@ class ModuloConteudoManager extends Component
             $this->validate(['urlExterna' => 'required|url']);
         }
 
-        $precisaDeArquivo = $this->tipo === 'pdf' || ($this->tipo === 'exercicio' && $this->exercicioSubtipo === 'anexo');
+        $precisaDeArquivo = in_array($this->tipo, ['pdf', 'video_curto'], true)
+            || ($this->tipo === 'exercicio' && $this->exercicioSubtipo === 'anexo');
 
         if ($precisaDeArquivo) {
-            $mimes = $this->tipo === 'pdf' ? 'pdf' : 'pdf,doc,docx';
-            $this->validate(['arquivo' => "nullable|file|mimes:{$mimes}|max:20480"]);
+            // Vídeo curto (30s–1min): sem ffprobe pra medir duração, o teto é de tamanho.
+            $regra = match ($this->tipo) {
+                'pdf' => 'mimes:pdf|max:20480',
+                'video_curto' => 'mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
+                default => 'mimes:pdf,doc,docx|max:20480',
+            };
+            $this->validate(['arquivo' => "nullable|file|{$regra}"]);
 
             if (! $this->conteudoId && ! $this->arquivo) {
                 $this->addError('arquivo', 'Envie um arquivo.');
@@ -317,6 +349,7 @@ class ModuloConteudoManager extends Component
     {
         return view('livewire.academico.modulo-conteudo-manager', [
             'modulos' => $this->turma->modulos()->with('conteudos')->get(),
+            'secoesExistentes' => $this->turma->modulos()->whereNotNull('secao')->distinct()->orderBy('secao')->pluck('secao'),
         ]);
     }
 }

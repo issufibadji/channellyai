@@ -101,6 +101,6 @@ class DisponibilidadeConteudoTest extends TestCase
         $response = $this->actingAs($this->aluno)->get(route('academico.minha-turma.index'));
 
         $response->assertOk();
-        $response->assertSee(route('academico.minha-turma.modulo', [$this->turma, $modulo]));
+        $response->assertSee(route('academico.minha-turma.aula', [$this->turma, $disponivel]));
     }
 }

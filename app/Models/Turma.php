@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection as SupportCollection;
 
 class Turma extends Model
 {
@@ -104,7 +105,7 @@ class Turma extends Model
      * Primeiro conteúdo disponível e ainda não concluído pelo aluno,
      * nesta turma. Sem memória de progresso — recalcula toda vez.
      *
-     * @return array{status: 'proximo'|'tudo-concluido'|'sem-disponivel', url: string}
+     * @return array{status: 'proximo'|'tudo-concluido'|'sem-disponivel', url: string, conteudo?: Conteudo}
      */
     public function proximoConteudoDisponivelPara(User $aluno): array
     {
@@ -121,7 +122,8 @@ class Turma extends Model
                     if (! $conteudo->concluidoPor($aluno)) {
                         return [
                             'status' => 'proximo',
-                            'url' => route('academico.minha-turma.modulo', [$this, $modulo]),
+                            'url' => route('academico.minha-turma.aula', [$this, $conteudo]),
+                            'conteudo' => $conteudo,
                         ];
                     }
                 }
@@ -135,14 +137,11 @@ class Turma extends Model
     }
 
     /**
-     * Sequência global de conteúdos da turma, só dos módulos categoria=nivel
-     * (Atividades Extras nunca entra na trilha), ordenada por nível do
-     * módulo, ordem do módulo, ordem do conteúdo. A1..C2 ordena certo como
-     * string simples, não precisa de mapa de nível custom.
-     *
-     * @return Collection<int, Conteudo>
+     * Consulta base da trilha: só módulos categoria=nivel (Atividades Extras
+     * nunca entra), ordenada por nível do módulo, ordem do módulo, ordem do
+     * conteúdo. A1..C2 ordena certo como string simples.
      */
-    public function sequenciaConteudos(): Collection
+    private function consultaSequencia(): Builder
     {
         return Conteudo::query()
             ->join('modulos', 'modulos.id', '=', 'conteudos.modulo_id')
@@ -151,20 +150,37 @@ class Turma extends Model
             ->orderBy('modulos.nivel')
             ->orderBy('modulos.ordem')
             ->orderBy('conteudos.ordem')
-            ->select('conteudos.*')
-            ->get();
+            ->select('conteudos.*');
     }
 
     /**
-     * Conteúdo anterior/próximo na trilha, relativo a $conteudo. Ambos null
-     * nas pontas da trilha, e também se $conteudo não pertence a ela (ex.:
-     * está num módulo categoria=extra).
+     * @return Collection<int, Conteudo>
+     */
+    public function sequenciaConteudos(): Collection
+    {
+        return $this->consultaSequencia()->get();
+    }
+
+    /**
+     * Conteúdo anterior/próximo relativo a $conteudo, DENTRO da mesma seção
+     * (ex.: "Vídeos Curtos" não se mistura com "Mapas Mentais" do mesmo
+     * nível). Ambos null nas pontas, e também se $conteudo não pertence à
+     * trilha (ex.: módulo categoria=extra).
      *
      * @return array{anterior: ?Conteudo, proximo: ?Conteudo}
      */
     public function vizinhosDoConteudo(Conteudo $conteudo): array
     {
-        $sequencia = $this->sequenciaConteudos();
+        $secao = $conteudo->modulo->secao;
+
+        $sequencia = $this->consultaSequencia()
+            ->when(
+                $secao === null,
+                fn (Builder $q) => $q->whereNull('modulos.secao'),
+                fn (Builder $q) => $q->where('modulos.secao', $secao),
+            )
+            ->get();
+
         $indice = $sequencia->search(fn (Conteudo $item) => $item->id === $conteudo->id);
 
         if ($indice === false) {
@@ -175,5 +191,59 @@ class Turma extends Model
             'anterior' => $indice > 0 ? $sequencia[$indice - 1] : null,
             'proximo' => $indice < $sequencia->count() - 1 ? $sequencia[$indice + 1] : null,
         ];
+    }
+
+    /**
+     * Vitrine do aluno: módulos agrupados por seção (carrosséis). Sem seção
+     * explícita, módulos de nível caem em "Aulas" e extras em "Atividades
+     * Extras". Ordem das seções: Aulas, seções customizadas (na ordem em que
+     * aparecem), Atividades Extras. Dentro da seção: por nível, depois ordem.
+     *
+     * `bloqueio` de cada card: null (liberado), int (dias até o primeiro
+     * conteúdo liberar) ou 'bloqueado' (tudo travado manualmente).
+     *
+     * @return array<int, array{titulo: string, cards: array<int, array{modulo: Modulo, numero: string, total: int, concluidas: int, bloqueio: int|string|null}>}>
+     */
+    public function vitrinePara(User $aluno): array
+    {
+        $modulos = $this->modulos()->with('conteudos')->get();
+        $dias = (new Conteudo)->diasDesdeMatricula($aluno, $this);
+        $concluidosIds = AlunoProgresso::where('aluno_id', $aluno->id)->pluck('conteudo_id')->all();
+
+        $porSecao = $modulos
+            ->sortBy([['nivel', 'asc'], ['ordem', 'asc']])
+            ->groupBy(fn (Modulo $modulo) => $modulo->secao ?? ($modulo->categoria === 'extra' ? 'Atividades Extras' : 'Aulas'));
+
+        $peso = fn (string $titulo) => match ($titulo) {
+            'Aulas' => 0,
+            'Atividades Extras' => 2,
+            default => 1,
+        };
+
+        return $porSecao
+            ->map(fn (SupportCollection $grupo, string $titulo) => [
+                'titulo' => $titulo,
+                'cards' => $grupo->values()->map(function (Modulo $modulo, int $i) use ($aluno, $dias, $concluidosIds) {
+                    $conteudos = $modulo->conteudos;
+                    $bloqueio = null;
+
+                    if ($conteudos->isNotEmpty() && ! $conteudos->contains(fn (Conteudo $c) => $c->disponivelPara($aluno, $this, $dias))) {
+                        $pendentes = $conteudos->where('bloqueado', false)
+                            ->map(fn (Conteudo $c) => $c->diasRestantesPara($aluno, $this, $dias));
+                        $bloqueio = $pendentes->isEmpty() ? 'bloqueado' : $pendentes->min();
+                    }
+
+                    return [
+                        'modulo' => $modulo,
+                        'numero' => str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                        'total' => $conteudos->count(),
+                        'concluidas' => $conteudos->whereIn('id', $concluidosIds)->count(),
+                        'bloqueio' => $bloqueio,
+                    ];
+                })->all(),
+            ])
+            ->sortBy(fn (array $secao) => $peso($secao['titulo']))
+            ->values()
+            ->all();
     }
 }

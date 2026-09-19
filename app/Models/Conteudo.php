@@ -115,6 +115,32 @@ class Conteudo extends Model
     }
 
     /**
+     * Nome do heroicon (outline) que representa o tipo, pra listas e cards.
+     */
+    public function icone(): string
+    {
+        return match ($this->tipo) {
+            'video', 'video_curto' => 'play-circle',
+            'pdf' => 'document-arrow-down',
+            'exercicio' => 'clipboard-document-check',
+            'link' => 'link',
+            default => 'document-text',
+        };
+    }
+
+    public function rotuloTipo(): string
+    {
+        return match ($this->tipo) {
+            'video' => 'Vídeo',
+            'video_curto' => 'Vídeo curto',
+            'pdf' => 'PDF',
+            'exercicio' => $this->exercicio_subtipo === 'quiz' ? 'Quiz' : 'Exercício',
+            'link' => 'Link',
+            default => 'Texto',
+        };
+    }
+
+    /**
      * URL de embed pra vídeo do YouTube/Vimeo a partir de url_externa, ou
      * null se não reconhecer o padrão (a view trata como link simples).
      */

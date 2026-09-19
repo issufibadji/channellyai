@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Academico;
 
-use App\Livewire\Academico\Aluno\ModuloConteudos;
+use App\Livewire\Academico\Aluno\Aula;
 use App\Models\AlunoRespostaOpcao;
 use App\Models\Conteudo;
 use App\Models\Curso;
@@ -122,9 +122,9 @@ class QuizTest extends TestCase
         $certa = ExercicioOpcao::factory()->correta()->create(['pergunta_id' => $pergunta->id]);
 
         Livewire::actingAs($aluno)
-            ->test(ModuloConteudos::class, ['turma' => $turma, 'modulo' => $modulo])
+            ->test(Aula::class, ['turma' => $turma, 'conteudo' => $conteudo])
             ->set("respostasSelecionadas.{$pergunta->id}", [$certa->id])
-            ->call('enviarQuiz', $conteudo->id);
+            ->call('enviarQuiz');
 
         $this->assertDatabaseHas('aluno_progresso', ['aluno_id' => $aluno->id, 'conteudo_id' => $conteudo->id]);
     }
@@ -138,13 +138,13 @@ class QuizTest extends TestCase
         $opcaoA = ExercicioOpcao::factory()->incorreta()->create(['pergunta_id' => $pergunta->id]);
         $opcaoB = ExercicioOpcao::factory()->correta()->create(['pergunta_id' => $pergunta->id]);
 
-        $component = Livewire::actingAs($aluno)->test(ModuloConteudos::class, ['turma' => $turma, 'modulo' => $modulo]);
+        $component = Livewire::actingAs($aluno)->test(Aula::class, ['turma' => $turma, 'conteudo' => $conteudo]);
 
-        $component->set("respostasSelecionadas.{$pergunta->id}", [$opcaoA->id])->call('enviarQuiz', $conteudo->id);
+        $component->set("respostasSelecionadas.{$pergunta->id}", [$opcaoA->id])->call('enviarQuiz');
         $this->assertSame(1, AlunoRespostaOpcao::where('aluno_id', $aluno->id)->count());
         $this->assertSame(0.0, $conteudo->corrigirRespostas($aluno));
 
-        $component->set("respostasSelecionadas.{$pergunta->id}", [$opcaoB->id])->call('enviarQuiz', $conteudo->id);
+        $component->set("respostasSelecionadas.{$pergunta->id}", [$opcaoB->id])->call('enviarQuiz');
         $this->assertSame(1, AlunoRespostaOpcao::where('aluno_id', $aluno->id)->count());
         $this->assertSame(100.0, $conteudo->corrigirRespostas($aluno));
     }
@@ -160,8 +160,8 @@ class QuizTest extends TestCase
         ]);
 
         Livewire::actingAs($aluno)
-            ->test(ModuloConteudos::class, ['turma' => $turma, 'modulo' => $modulo])
-            ->call('enviarQuiz', $conteudo->id)
+            ->test(Aula::class, ['turma' => $turma, 'conteudo' => $conteudo])
+            ->call('enviarQuiz')
             ->assertForbidden();
     }
 }

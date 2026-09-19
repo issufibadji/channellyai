@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Academico;
 
-use App\Livewire\Academico\Aluno\ModuloConteudos;
+use App\Livewire\Academico\Aluno\Aula;
 use App\Models\Conteudo;
 use App\Models\Curso;
 use App\Models\Modulo;
@@ -79,14 +79,14 @@ class ProgressoTest extends TestCase
         $conteudo = Conteudo::factory()->liberaEm(0)->create(['modulo_id' => $modulo->id]);
 
         Livewire::actingAs($this->aluno)
-            ->test(ModuloConteudos::class, ['turma' => $this->turma, 'modulo' => $modulo])
-            ->call('toggleConclusao', $conteudo->id);
+            ->test(Aula::class, ['turma' => $this->turma, 'conteudo' => $conteudo])
+            ->call('toggleConclusao');
 
         $this->assertTrue($conteudo->fresh()->concluidoPor($this->aluno));
 
         Livewire::actingAs($this->aluno)
-            ->test(ModuloConteudos::class, ['turma' => $this->turma, 'modulo' => $modulo])
-            ->call('toggleConclusao', $conteudo->id);
+            ->test(Aula::class, ['turma' => $this->turma, 'conteudo' => $conteudo])
+            ->call('toggleConclusao');
 
         $this->assertFalse($conteudo->fresh()->concluidoPor($this->aluno));
     }
@@ -97,8 +97,8 @@ class ProgressoTest extends TestCase
         $conteudo = Conteudo::factory()->bloqueado()->create(['modulo_id' => $modulo->id]);
 
         Livewire::actingAs($this->aluno)
-            ->test(ModuloConteudos::class, ['turma' => $this->turma, 'modulo' => $modulo])
-            ->call('toggleConclusao', $conteudo->id)
+            ->test(Aula::class, ['turma' => $this->turma, 'conteudo' => $conteudo])
+            ->call('toggleConclusao')
             ->assertForbidden();
 
         $this->assertFalse($conteudo->fresh()->concluidoPor($this->aluno));
@@ -117,7 +117,7 @@ class ProgressoTest extends TestCase
         $resultado = $this->turma->proximoConteudoDisponivelPara($this->aluno);
 
         $this->assertSame('proximo', $resultado['status']);
-        $this->assertSame(route('academico.minha-turma.modulo', [$this->turma, $modulo]), $resultado['url']);
+        $this->assertSame(route('academico.minha-turma.aula', [$this->turma, $proximo]), $resultado['url']);
     }
 
     public function test_continuar_estudando_retorna_tudo_concluido_quando_nao_ha_mais_nada_pendente(): void
