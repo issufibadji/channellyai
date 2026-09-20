@@ -135,7 +135,7 @@
                 <label class="block text-sm font-medium mb-1 text-text-primary">Tipo</label>
                 <select wire:model.live="tipo" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     <option value="video">Vídeo (YouTube/Vimeo)</option>
-                    <option value="video_curto">Vídeo curto (upload, 30s a 1min)</option>
+                    <option value="video_curto">Vídeo curto (30s a 1min)</option>
                     <option value="pdf">PDF</option>
                     <option value="texto">Texto</option>
                     <option value="exercicio">Exercício</option>
@@ -151,11 +151,14 @@
                 </div>
             @endif
 
-            @if ($tipo === 'video')
+            @if (in_array($tipo, ['video', 'video_curto'], true))
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-text-primary">Link do YouTube ou Vimeo</label>
-                    <input type="text" wire:model="urlExterna" placeholder="https://youtube.com/watch?v=..." class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Link do vídeo (Google Drive, YouTube ou Vimeo)</label>
+                    <input type="text" wire:model="urlExterna" placeholder="https://drive.google.com/file/d/.../view" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     @error('urlExterna') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                    @if ($tipo === 'video_curto')
+                        <p class="mt-1 text-xs text-text-secondary">Pensado pra vídeos de 30 segundos a 1 minuto. No Google Drive, o arquivo precisa estar compartilhado como "Qualquer pessoa com o link".</p>
+                    @endif
                 </div>
             @endif
 
@@ -164,19 +167,6 @@
                     <label class="block text-sm font-medium mb-1 text-text-primary">URL externa</label>
                     <input type="text" wire:model="urlExterna" placeholder="https://..." class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     @error('urlExterna') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
-                </div>
-            @endif
-
-            @if ($tipo === 'video_curto')
-                <div>
-                    <label class="block text-sm font-medium mb-1 text-text-primary">Arquivo de vídeo (MP4, WEBM ou MOV — até 50MB)</label>
-                    <input type="file" wire:model="arquivo" accept="video/mp4,video/webm,video/quicktime" class="w-full text-sm text-text-secondary">
-                    <div wire:loading wire:target="arquivo" class="text-xs text-text-secondary mt-1">Enviando...</div>
-                    @error('arquivo') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
-                    <p class="mt-1 text-xs text-text-secondary">Pensado pra vídeos de 30 segundos a 1 minuto (formato vertical funciona bem no celular). O limite é de tamanho, não de duração.</p>
-                    @if ($conteudoId && ! $arquivo)
-                        <p class="mt-1 text-xs text-text-secondary">Deixe em branco pra manter o vídeo atual.</p>
-                    @endif
                 </div>
             @endif
 

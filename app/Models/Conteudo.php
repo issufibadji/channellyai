@@ -158,6 +158,11 @@ class Conteudo extends Model
             return "https://player.vimeo.com/video/{$m[1]}";
         }
 
+        // Google Drive (file/d/ID/view, open?id=ID, uc?id=ID) → player de /preview.
+        if (preg_match('/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([A-Za-z0-9_-]+)/', $this->url_externa, $m)) {
+            return "https://drive.google.com/file/d/{$m[1]}/preview";
+        }
+
         return null;
     }
 }

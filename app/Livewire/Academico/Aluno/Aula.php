@@ -20,7 +20,12 @@ class Aula extends Component
     public Conteudo $conteudo;
 
     /**
-     * @var array<int, array<int>> [pergunta_id => [opcao_id, ...]]
+     * @var array<int, array<int, bool>> [pergunta_id => [opcao_id => marcado]]
+     *
+     * Cada checkbox tem um caminho wire:model próprio (pergunta.opcao), não
+     * compartilhado com outro — checkbox de grupo (mesmo model + value=)
+     * quebra quando o model é aninhado, o Livewire ignora o value e marca
+     * todo mundo junto.
      */
     public array $respostasSelecionadas = [];
 
@@ -75,11 +80,13 @@ class Aula extends Component
             ->delete();
 
         foreach ($perguntaIds as $perguntaId) {
-            foreach ($this->respostasSelecionadas[$perguntaId] ?? [] as $opcaoId) {
-                AlunoRespostaOpcao::create([
-                    'aluno_id' => $aluno->id,
-                    'opcao_id' => (int) $opcaoId,
-                ]);
+            foreach ($this->respostasSelecionadas[$perguntaId] ?? [] as $opcaoId => $marcado) {
+                if ($marcado) {
+                    AlunoRespostaOpcao::create([
+                        'aluno_id' => $aluno->id,
+                        'opcao_id' => (int) $opcaoId,
+                    ]);
+                }
             }
         }
 

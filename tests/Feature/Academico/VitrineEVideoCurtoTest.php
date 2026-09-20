@@ -51,59 +51,67 @@ class VitrineEVideoCurtoTest extends TestCase
         return Livewire::actingAs($this->professor)->test(ModuloConteudoManager::class, ['turma' => $this->turma]);
     }
 
-    public function test_upload_de_video_curto_valido_salva_arquivo_path(): void
+    public function test_video_curto_salva_o_link_do_google_drive(): void
     {
-        Storage::fake('public');
         $modulo = Modulo::factory()->create(['turma_id' => $this->turma->id]);
 
         $this->manager()
             ->call('createConteudo', $modulo->id)
             ->set('titulo', 'Frase do dia')
             ->set('tipo', 'video_curto')
-            ->set('arquivo', UploadedFile::fake()->create('frase.mp4', 5000, 'video/mp4'))
+            ->set('urlExterna', 'https://drive.google.com/file/d/1dwCjrZftEnNUjx-Kz8b8vegfteSUPS6g/view?usp=sharing')
             ->call('saveConteudo')
             ->assertHasNoErrors();
 
         $conteudo = Conteudo::where('titulo', 'Frase do dia')->first();
 
         $this->assertSame('video_curto', $conteudo->tipo);
-        Storage::disk('public')->assertExists($conteudo->arquivo_path);
+        $this->assertSame('https://drive.google.com/file/d/1dwCjrZftEnNUjx-Kz8b8vegfteSUPS6g/view?usp=sharing', $conteudo->url_externa);
+        $this->assertNull($conteudo->arquivo_path);
     }
 
-    public function test_video_curto_rejeita_formato_e_tamanho_invalidos(): void
+    public function test_video_curto_exige_um_link_valido(): void
     {
-        Storage::fake('public');
         $modulo = Modulo::factory()->create(['turma_id' => $this->turma->id]);
 
         $this->manager()
             ->call('createConteudo', $modulo->id)
-            ->set('titulo', 'Errado')
+            ->set('titulo', 'Sem link')
             ->set('tipo', 'video_curto')
-            ->set('arquivo', UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'))
             ->call('saveConteudo')
-            ->assertHasErrors('arquivo');
+            ->assertHasErrors('urlExterna');
 
         $this->manager()
             ->call('createConteudo', $modulo->id)
-            ->set('titulo', 'Grande')
+            ->set('titulo', 'Link ruim')
             ->set('tipo', 'video_curto')
-            ->set('arquivo', UploadedFile::fake()->create('grande.mp4', 51201, 'video/mp4'))
+            ->set('urlExterna', 'isso nao e uma url')
             ->call('saveConteudo')
-            ->assertHasErrors('arquivo');
+            ->assertHasErrors('urlExterna');
 
         $this->assertSame(0, Conteudo::count());
     }
 
-    public function test_video_curto_exige_arquivo_na_criacao(): void
+    public function test_editar_video_curto_antigo_com_arquivo_limpa_o_arquivo_orfao(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('conteudos/antigo.mp4', 'lixo');
+
         $modulo = Modulo::factory()->create(['turma_id' => $this->turma->id]);
+        $conteudo = Conteudo::factory()->create([
+            'modulo_id' => $modulo->id,
+            'tipo' => 'video_curto',
+            'arquivo_path' => 'conteudos/antigo.mp4',
+        ]);
 
         $this->manager()
-            ->call('createConteudo', $modulo->id)
-            ->set('titulo', 'Sem arquivo')
-            ->set('tipo', 'video_curto')
+            ->call('editConteudo', $conteudo->id)
+            ->set('urlExterna', 'https://drive.google.com/file/d/ABC123_-x/view')
             ->call('saveConteudo')
-            ->assertHasErrors('arquivo');
+            ->assertHasNoErrors();
+
+        $this->assertNull($conteudo->fresh()->arquivo_path);
+        Storage::disk('public')->assertMissing('conteudos/antigo.mp4');
     }
 
     public function test_professor_salva_secao_e_capa_do_modulo(): void
@@ -137,7 +145,7 @@ class VitrineEVideoCurtoTest extends TestCase
             ->assertHasErrors('capa');
     }
 
-    public function test_limite_de_upload_do_livewire_comporta_pdf_e_video(): void
+    public function test_limite_de_upload_do_livewire_comporta_pdf_de_20mb(): void
     {
         // Sem essa config o Livewire barra em 12MB, antes da validação do componente.
         $this->assertContains('max:51200', config('livewire.temporary_file_upload.rules'));
@@ -195,21 +203,21 @@ class VitrineEVideoCurtoTest extends TestCase
             ->assertSee('Abrir / baixar arquivo');
     }
 
-    public function test_pagina_de_aula_renderiza_o_player_do_video_curto(): void
+    public function test_pagina_de_aula_renderiza_o_player_embutido_do_video_curto(): void
     {
         $modulo = Modulo::factory()->create(['turma_id' => $this->turma->id]);
         $conteudo = Conteudo::factory()->create([
             'modulo_id' => $modulo->id,
             'tipo' => 'video_curto',
-            'arquivo_path' => 'conteudos/frase.mp4',
+            'url_externa' => 'https://drive.google.com/file/d/1dwCjrZftEnNUjx-Kz8b8vegfteSUPS6g/view?t=10.723',
             'dias_liberacao' => 0,
         ]);
 
         $this->actingAs($this->aluno)
             ->get(route('academico.minha-turma.aula', [$this->turma, $conteudo]))
             ->assertOk()
-            ->assertSee('<video', false)
-            ->assertSee('storage/conteudos/frase.mp4', false);
+            ->assertSee('<iframe', false)
+            ->assertSee('https://drive.google.com/file/d/1dwCjrZftEnNUjx-Kz8b8vegfteSUPS6g/preview', false);
     }
 
     public function test_pagina_de_aula_bloqueada_nao_expoe_o_conteudo(): void
@@ -218,7 +226,7 @@ class VitrineEVideoCurtoTest extends TestCase
         $conteudo = Conteudo::factory()->create([
             'modulo_id' => $modulo->id,
             'tipo' => 'video_curto',
-            'arquivo_path' => 'conteudos/secreto.mp4',
+            'url_externa' => 'https://drive.google.com/file/d/SEGREDO123/view',
             'dias_liberacao' => 30,
         ]);
 
@@ -226,7 +234,7 @@ class VitrineEVideoCurtoTest extends TestCase
             ->get(route('academico.minha-turma.aula', [$this->turma, $conteudo]))
             ->assertOk()
             ->assertSee('libera em 20 dia')
-            ->assertDontSee('secreto.mp4');
+            ->assertDontSee('SEGREDO123');
     }
 
     public function test_aula_de_outra_turma_da_404_e_aluno_nao_matriculado_da_403(): void

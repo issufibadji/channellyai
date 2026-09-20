@@ -123,7 +123,7 @@ class QuizTest extends TestCase
 
         Livewire::actingAs($aluno)
             ->test(Aula::class, ['turma' => $turma, 'conteudo' => $conteudo])
-            ->set("respostasSelecionadas.{$pergunta->id}", [$certa->id])
+            ->set("respostasSelecionadas.{$pergunta->id}.{$certa->id}", true)
             ->call('enviarQuiz');
 
         $this->assertDatabaseHas('aluno_progresso', ['aluno_id' => $aluno->id, 'conteudo_id' => $conteudo->id]);
@@ -140,11 +140,13 @@ class QuizTest extends TestCase
 
         $component = Livewire::actingAs($aluno)->test(Aula::class, ['turma' => $turma, 'conteudo' => $conteudo]);
 
-        $component->set("respostasSelecionadas.{$pergunta->id}", [$opcaoA->id])->call('enviarQuiz');
+        $component->set("respostasSelecionadas.{$pergunta->id}.{$opcaoA->id}", true)->call('enviarQuiz');
         $this->assertSame(1, AlunoRespostaOpcao::where('aluno_id', $aluno->id)->count());
         $this->assertSame(0.0, $conteudo->corrigirRespostas($aluno));
 
-        $component->set("respostasSelecionadas.{$pergunta->id}", [$opcaoB->id])->call('enviarQuiz');
+        $component->set("respostasSelecionadas.{$pergunta->id}.{$opcaoA->id}", false)
+            ->set("respostasSelecionadas.{$pergunta->id}.{$opcaoB->id}", true)
+            ->call('enviarQuiz');
         $this->assertSame(1, AlunoRespostaOpcao::where('aluno_id', $aluno->id)->count());
         $this->assertSame(100.0, $conteudo->corrigirRespostas($aluno));
     }

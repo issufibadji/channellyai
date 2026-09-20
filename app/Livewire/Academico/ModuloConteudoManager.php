@@ -237,20 +237,15 @@ class ModuloConteudoManager extends Component
             $this->validate(['exercicioSubtipo' => 'required|in:anexo,quiz']);
         }
 
-        if (in_array($this->tipo, ['video', 'link'], true)) {
+        if (in_array($this->tipo, ['video', 'video_curto', 'link'], true)) {
             $this->validate(['urlExterna' => 'required|url']);
         }
 
-        $precisaDeArquivo = in_array($this->tipo, ['pdf', 'video_curto'], true)
+        $precisaDeArquivo = $this->tipo === 'pdf'
             || ($this->tipo === 'exercicio' && $this->exercicioSubtipo === 'anexo');
 
         if ($precisaDeArquivo) {
-            // Vídeo curto (30s–1min): sem ffprobe pra medir duração, o teto é de tamanho.
-            $regra = match ($this->tipo) {
-                'pdf' => 'mimes:pdf|max:20480',
-                'video_curto' => 'mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
-                default => 'mimes:pdf,doc,docx|max:20480',
-            };
+            $regra = $this->tipo === 'pdf' ? 'mimes:pdf|max:20480' : 'mimes:pdf,doc,docx|max:20480';
             $this->validate(['arquivo' => "nullable|file|{$regra}"]);
 
             if (! $this->conteudoId && ! $this->arquivo) {
@@ -287,7 +282,7 @@ class ModuloConteudoManager extends Component
                 'tipo' => $this->tipo,
                 'exercicio_subtipo' => $this->tipo === 'exercicio' ? $this->exercicioSubtipo : null,
                 'corpo' => $this->tipo === 'texto' ? ($this->corpo ?: null) : null,
-                'url_externa' => in_array($this->tipo, ['video', 'link'], true) ? $this->urlExterna : null,
+                'url_externa' => in_array($this->tipo, ['video', 'video_curto', 'link'], true) ? $this->urlExterna : null,
                 'ordem' => $this->conteudoOrdem,
                 'dias_liberacao' => $this->diasLiberacao,
                 'bloqueado' => $this->bloqueado,

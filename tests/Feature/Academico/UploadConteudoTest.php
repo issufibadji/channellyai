@@ -120,7 +120,7 @@ class UploadConteudoTest extends TestCase
         Storage::disk('public')->assertExists($conteudo->arquivo_path);
     }
 
-    public function test_embed_url_video_reconhece_youtube_e_vimeo(): void
+    public function test_embed_url_video_reconhece_youtube_vimeo_e_google_drive(): void
     {
         $youtube = new Conteudo(['url_externa' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
         $this->assertSame('https://www.youtube.com/embed/dQw4w9WgXcQ', $youtube->embedUrlVideo());
@@ -130,6 +130,12 @@ class UploadConteudoTest extends TestCase
 
         $vimeo = new Conteudo(['url_externa' => 'https://vimeo.com/76979871']);
         $this->assertSame('https://player.vimeo.com/video/76979871', $vimeo->embedUrlVideo());
+
+        $driveView = new Conteudo(['url_externa' => 'https://drive.google.com/file/d/1dwCjrZftEnNUjx-Kz8b8vegfteSUPS6g/view?t=10.723']);
+        $this->assertSame('https://drive.google.com/file/d/1dwCjrZftEnNUjx-Kz8b8vegfteSUPS6g/preview', $driveView->embedUrlVideo());
+
+        $driveOpen = new Conteudo(['url_externa' => 'https://drive.google.com/open?id=ABC_def-123']);
+        $this->assertSame('https://drive.google.com/file/d/ABC_def-123/preview', $driveOpen->embedUrlVideo());
 
         $desconhecida = new Conteudo(['url_externa' => 'https://example.com/video']);
         $this->assertNull($desconhecida->embedUrlVideo());

@@ -24,19 +24,9 @@
     @else
         <div class="space-y-4">
             @switch(true)
-                @case($conteudo->tipo === 'video_curto')
-                    @if ($conteudo->arquivo_path)
-                        <div class="rounded-2xl bg-black flex justify-center overflow-hidden">
-                            <video controls playsinline preload="metadata" class="max-h-[75vh] w-auto max-w-full" src="{{ asset('storage/'.$conteudo->arquivo_path) }}"></video>
-                        </div>
-                    @else
-                        <x-card><p class="text-sm text-text-secondary">Nenhum vídeo enviado ainda.</p></x-card>
-                    @endif
-                    @break
-
-                @case($conteudo->tipo === 'video')
+                @case(in_array($conteudo->tipo, ['video', 'video_curto'], true))
                     @if ($conteudo->embedUrlVideo())
-                        <iframe src="{{ $conteudo->embedUrlVideo() }}" class="w-full aspect-video rounded-2xl border border-surface-border" allowfullscreen></iframe>
+                        <iframe src="{{ $conteudo->embedUrlVideo() }}" class="w-full aspect-video rounded-2xl border border-surface-border bg-black" allow="autoplay; fullscreen" allowfullscreen></iframe>
                     @elseif ($conteudo->url_externa)
                         <x-card>
                             <a href="{{ $conteudo->url_externa }}" target="_blank" rel="noopener" class="text-primary hover:underline text-sm">Abrir vídeo &rarr;</a>
@@ -76,7 +66,7 @@
                                     <div class="space-y-2">
                                         @foreach ($pergunta->opcoes as $opcao)
                                             <label class="flex items-center gap-2 text-sm text-text-secondary">
-                                                <input type="checkbox" wire:model="respostasSelecionadas.{{ $pergunta->id }}" value="{{ $opcao->id }}" class="rounded bg-surface border-surface-border">
+                                                <input type="checkbox" wire:model="respostasSelecionadas.{{ $pergunta->id }}.{{ $opcao->id }}" class="rounded bg-surface border-surface-border">
                                                 {{ $opcao->texto }}
                                             </label>
                                         @endforeach
