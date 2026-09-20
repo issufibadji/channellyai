@@ -85,6 +85,7 @@
 
                 <div class="flex flex-wrap gap-4 text-sm">
                     <a href="{{ route('academico.turmas.conteudo', $turma) }}" class="text-primary hover:underline">Módulos e conteúdo</a>
+                    <a href="{{ route('academico.turmas.ao-vivo', $turma) }}" class="text-primary hover:underline">Aulas ao vivo</a>
                     @can('manage-matriculas')
                         <a href="{{ route('academico.turmas.matricula', $turma) }}" class="text-primary hover:underline">Matrícula</a>
                     @endcan

@@ -49,6 +49,11 @@ class Turma extends Model
         return $this->hasMany(Modulo::class)->orderBy('ordem');
     }
 
+    public function aulasAoVivo(): HasMany
+    {
+        return $this->hasMany(AulaAoVivo::class)->orderBy('inicio_em');
+    }
+
     /**
      * Escopo: turmas em que o usuário é o professor responsável.
      */

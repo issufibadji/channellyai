@@ -41,6 +41,34 @@
     @endif
 </div>
 
+@if ($aulasAoVivo->isNotEmpty())
+    <div class="mb-8 rounded-2xl border {{ $aulasAoVivo->contains(fn ($a) => $a->estaAoVivo()) ? 'border-red-500/40 bg-red-500/10' : 'border-surface-border bg-surface-card' }} p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-text-primary inline-flex items-center gap-2">
+                <x-heroicon-o-video-camera class="w-5 h-5 text-red-500" /> Aulas ao vivo
+            </h2>
+            <a href="{{ route('academico.ao-vivo.index') }}" class="text-sm text-primary hover:underline">Ver todas</a>
+        </div>
+        <div class="space-y-2">
+            @foreach ($aulasAoVivo as $aula)
+                <a href="{{ route('academico.ao-vivo.sala', $aula) }}" class="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-surface-border/40 transition">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-medium text-text-primary truncate">{{ $aula->titulo }}</p>
+                        <p class="text-xs text-text-secondary">{{ $aula->turma->nome }} · {{ $aula->inicio_em->format('d/m \à\s H:i') }}</p>
+                    </div>
+                    @if ($aula->estaAoVivo())
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 text-xs font-semibold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span> AO VIVO — entrar
+                        </span>
+                    @else
+                        <x-badge variant="primary">Agendada</x-badge>
+                    @endif
+                </a>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 @if (! $turmaRecente)
     <x-card class="mb-8">
         <p class="text-sm text-text-secondary">Você ainda não está matriculado em nenhuma turma.</p>

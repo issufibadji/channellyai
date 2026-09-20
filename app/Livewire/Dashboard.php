@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\AlunoProgresso;
+use App\Models\AulaAoVivo;
 use App\Models\Turma;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +50,12 @@ class Dashboard extends Component
 
         return [
             'turmasDoAluno' => Turma::doAluno($aluno)->with('curso')->orderBy('nome')->get(),
+            'aulasAoVivo' => AulaAoVivo::with('turma')->ativas()
+                ->whereIn('turma_id', Turma::doAluno($aluno)->select('turmas.id'))
+                ->orderByRaw("case status when 'ao_vivo' then 0 else 1 end")
+                ->orderBy('inicio_em')
+                ->limit(3)
+                ->get(),
             'turmaRecente' => $turmaRecente,
             'continuar' => $turmaRecente
                 ? $turmaRecente->proximoConteudoDisponivelPara($aluno)

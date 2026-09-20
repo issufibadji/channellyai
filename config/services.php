@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    /*
+    | Aulas ao vivo. O domínio do Jitsi é configurável: o servidor público
+    | (meet.jit.si) limita o uso embutido; pra aulas longas aponte pra um Jitsi
+    | próprio ou pro 8x8 JaaS.
+    */
+    'jitsi' => [
+        'domain' => env('JITSI_DOMAIN', 'meet.jit.si'),
+    ],
+
 ];

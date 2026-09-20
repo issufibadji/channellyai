@@ -1,14 +1,17 @@
 <?php
 
 use App\Livewire\Academico\Aluno\Aula;
+use App\Livewire\Academico\Aluno\AulasAoVivoLista;
 use App\Livewire\Academico\Aluno\MinhasTurmasLista;
 use App\Livewire\Academico\Aluno\ModuloConteudos;
 use App\Livewire\Academico\Aluno\TurmaModulos;
 use App\Livewire\Academico\AlunoManager;
+use App\Livewire\Academico\AulaAoVivoManager;
 use App\Livewire\Academico\CursoManager;
 use App\Livewire\Academico\MatriculaManager;
 use App\Livewire\Academico\MinhasTurmas;
 use App\Livewire\Academico\ModuloConteudoManager;
+use App\Livewire\Academico\SalaAoVivo;
 use App\Livewire\Academico\TurmaManager;
 use Illuminate\Support\Facades\Route;
 
@@ -23,13 +26,18 @@ Route::middleware(['auth', 'verified', 'check2fa'])->group(function () {
         Route::get('academico/minhas-turmas', MinhasTurmas::class)->name('academico.minhas-turmas.index');
         Route::get('academico/meus-alunos', AlunoManager::class)->name('academico.meus-alunos.index');
         Route::get('academico/turmas/{turma}/conteudo', ModuloConteudoManager::class)->name('academico.turmas.conteudo');
+        Route::get('academico/turmas/{turma}/ao-vivo', AulaAoVivoManager::class)->name('academico.turmas.ao-vivo');
     });
+
+    // Sala compartilhada por professor e alunos: sem permissão de rota, a autorização é a policy da turma.
+    Route::get('academico/ao-vivo/{aula}', SalaAoVivo::class)->name('academico.ao-vivo.sala');
 
     Route::middleware('checkPermission:manage-matriculas')
         ->get('academico/turmas/{turma}/matricula', MatriculaManager::class)->name('academico.turmas.matricula');
 
     Route::middleware('checkPermission:view-own-turma')->group(function () {
         Route::get('academico/minha-turma', MinhasTurmasLista::class)->name('academico.minha-turma.index');
+        Route::get('academico/ao-vivo', AulasAoVivoLista::class)->name('academico.ao-vivo.index');
         Route::get('academico/minha-turma/{turma}', TurmaModulos::class)->name('academico.minha-turma.turma');
         Route::get('academico/minha-turma/{turma}/modulo/{modulo}', ModuloConteudos::class)->name('academico.minha-turma.modulo');
         Route::get('academico/minha-turma/{turma}/aula/{conteudo}', Aula::class)->name('academico.minha-turma.aula');

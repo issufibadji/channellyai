@@ -101,6 +101,11 @@ class MenuSideBarSeeder extends Seeder
         );
 
         MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'academico.ao-vivo.index'],
+            ['label' => 'Aulas ao Vivo', 'group' => self::GRUPO_ACADEMICO, 'icon' => 'video-camera', 'permission' => 'view-own-turma', 'order' => 18],
+        );
+
+        MenuSideBar::query()->updateOrCreate(
             ['route_name' => 'admin.ajuda.index'],
             ['label' => 'Gerenciar Ajuda', 'group' => self::GRUPO_ADMINISTRACAO, 'icon' => 'wrench-screwdriver', 'permission' => 'manage-ajuda', 'order' => 17],
         );
