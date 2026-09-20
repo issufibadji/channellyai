@@ -1,6 +1,8 @@
 <div>
     @if ($isAluno)
         @include('livewire.dashboard-aluno')
+    @elseif ($isProfessor)
+        @include('livewire.dashboard-professor')
     @else
         <div class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30">

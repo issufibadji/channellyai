@@ -60,7 +60,7 @@ class DashboardAlunoTest extends TestCase
         $response->assertDontSee('Seu progresso');
     }
 
-    public function test_dashboard_de_professor_continua_igual(): void
+    public function test_dashboard_de_professor_mostra_a_area_do_professor(): void
     {
         $professor = User::factory()->create();
         $professor->assignRole('professor');
@@ -68,7 +68,8 @@ class DashboardAlunoTest extends TestCase
         $response = $this->actingAs($professor)->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Sua função');
+        $response->assertSee('Área do Professor');
         $response->assertDontSee('Seu progresso');
+        $response->assertDontSee('Sua função');
     }
 }

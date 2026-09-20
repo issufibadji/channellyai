@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
 
 class Turma extends Model
@@ -245,5 +246,41 @@ class Turma extends Model
             ->sortBy(fn (array $secao) => $peso($secao['titulo']))
             ->values()
             ->all();
+    }
+
+    /**
+     * Progresso de cada aluno matriculado nas aulas de nível da turma, do
+     * menos ativo pro mais ativo (quem nunca concluiu nada vem primeiro).
+     *
+     * @return SupportCollection<int, array{aluno: User, concluidas: int, total: int, percentual: float, ultima_atividade: ?Carbon}>
+     */
+    public function progressoDosAlunos(): SupportCollection
+    {
+        $total = $this->totalAulas();
+        $alunos = $this->alunos()->orderBy('name')->get();
+
+        $progresso = AlunoProgresso::query()
+            ->selectRaw('aluno_id, count(*) as concluidas, max(concluido_em) as ultima')
+            ->whereIn('aluno_id', $alunos->pluck('id'))
+            ->whereHas('conteudo.modulo', fn ($q) => $q->where('turma_id', $this->id)->where('categoria', 'nivel'))
+            ->groupBy('aluno_id')
+            ->get()
+            ->keyBy('aluno_id');
+
+        return $alunos
+            ->map(function (User $aluno) use ($progresso, $total) {
+                $linha = $progresso->get($aluno->id);
+                $concluidas = (int) ($linha->concluidas ?? 0);
+
+                return [
+                    'aluno' => $aluno,
+                    'concluidas' => $concluidas,
+                    'total' => $total,
+                    'percentual' => $total === 0 ? 0.0 : round($concluidas / $total * 100, 1),
+                    'ultima_atividade' => $linha?->ultima ? Carbon::parse($linha->ultima) : null,
+                ];
+            })
+            ->sortBy(fn (array $l) => $l['ultima_atividade']?->timestamp ?? 0)
+            ->values();
     }
 }
