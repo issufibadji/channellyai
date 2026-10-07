@@ -13,6 +13,7 @@ Centralizar o atendimento ao cliente vindo de múltiplos canais (WhatsApp, Insta
 ## Canais de Atendimento
 
 - WhatsApp
+- Telegram
 - Instagram
 - Facebook
 - Site / Chat

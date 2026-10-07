@@ -16,6 +16,7 @@ class Canal extends Model implements AuditableContract
 
     public const TIPOS = [
         'whatsapp' => 'WhatsApp',
+        'telegram' => 'Telegram',
         'instagram' => 'Instagram',
         'facebook' => 'Facebook',
         'site' => 'Site / Chat',
