@@ -1,5 +1,5 @@
 <div>
-    @if ($estabelecimentos->count() > 1)
+    @if ($estabelecimentos->count() > 1 || ($podeEscolher && $estabelecimentos->isNotEmpty()))
         <div class="relative" x-data="{ open: false }">
             <button
                 type="button"

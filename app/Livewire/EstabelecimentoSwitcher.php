@@ -35,6 +35,7 @@ class EstabelecimentoSwitcher extends Component
         return view('livewire.estabelecimento-switcher', [
             'estabelecimentos' => $estabelecimentos,
             'atual' => app(CurrentEstabelecimento::class)->estabelecimento(),
+            'podeEscolher' => $user->hasRole('admin'),
         ]);
     }
 }
