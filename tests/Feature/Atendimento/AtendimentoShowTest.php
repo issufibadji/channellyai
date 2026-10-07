@@ -11,11 +11,12 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\WithEstabelecimentoAtual;
 use Tests\TestCase;
 
 class AtendimentoShowTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithEstabelecimentoAtual;
 
     protected Atendimento $atendimento;
 
@@ -24,6 +25,7 @@ class AtendimentoShowTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+        $this->definirEstabelecimentoAtual($this->criarEstabelecimento());
 
         $cliente = Cliente::create(['nome' => 'Maria']);
         $canal = Canal::create(['nome' => 'WhatsApp', 'tipo' => 'whatsapp']);

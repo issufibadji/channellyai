@@ -8,17 +8,19 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\WithEstabelecimentoAtual;
 use Tests\TestCase;
 
 class CanalManagerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithEstabelecimentoAtual;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+        $this->definirEstabelecimentoAtual($this->criarEstabelecimento());
     }
 
     public function test_user_without_manage_canais_gets_403(): void

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'check2fa' => \App\Http\Middleware\CheckTwoFactor::class,
             'checkPermission' => \App\Http\Middleware\CheckPermission::class,
+            'setEstabelecimento' => \App\Http\Middleware\SetCurrentEstabelecimento::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -31,6 +31,7 @@ class RolePermissionSeeder extends Seeder
             'manage-canais',
             'manage-chatbot',
             'view-relatorios-atendimento',
+            'manage-estabelecimentos',
         ];
 
         foreach ($permissions as $permission) {

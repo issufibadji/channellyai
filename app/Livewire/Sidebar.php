@@ -3,12 +3,15 @@
 namespace App\Livewire;
 
 use App\Models\MenuSideBar;
+use App\Services\CurrentEstabelecimento;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Sidebar extends Component
 {
+    private const GRUPO_ATENDIMENTO = 'Atendimento';
+
     #[On('menu-updated')]
     public function refresh(): void
     {
@@ -23,7 +26,17 @@ class Sidebar extends Component
             $item->setRelation('children', $item->children->filter(fn ($child) => $this->visible($child)));
         });
 
-        return view('livewire.sidebar', ['groups' => $items->groupBy(fn ($item) => $item->group ?: '')]);
+        $nomeEstabelecimento = app(CurrentEstabelecimento::class)->estabelecimento()?->nome;
+
+        return view('livewire.sidebar', [
+            'groups' => $items->groupBy(function (MenuSideBar $item) use ($nomeEstabelecimento) {
+                if ($item->group === self::GRUPO_ATENDIMENTO && $nomeEstabelecimento) {
+                    return $nomeEstabelecimento;
+                }
+
+                return $item->group ?: '';
+            }),
+        ]);
     }
 
     private function visible(MenuSideBar $item): bool

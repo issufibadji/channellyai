@@ -29,6 +29,8 @@
                 class="sticky top-0 z-30 flex justify-end items-center gap-2 px-6 py-3 border-b border-surface-border bg-surface-card/40 backdrop-blur"
                 x-data="{ light: document.documentElement.classList.contains('light') }"
             >
+                <livewire:estabelecimento-switcher />
+
                 <button
                     type="button"
                     @click="light = !light; document.documentElement.classList.toggle('light', light); localStorage.setItem('theme', light ? 'light' : 'dark')"

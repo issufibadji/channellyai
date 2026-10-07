@@ -2,6 +2,7 @@
 
 namespace App\Models\Atendimento;
 
+use App\Concerns\BelongsToEstabelecimento;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 class Atendimento extends Model implements AuditableContract
 {
-    use Auditable;
+    use Auditable, BelongsToEstabelecimento;
 
     protected $table = 'atendimentos';
 
@@ -30,7 +31,7 @@ class Atendimento extends Model implements AuditableContract
         'outros' => 'Outros',
     ];
 
-    protected $fillable = ['cliente_id', 'canal_id', 'assigned_to', 'setor', 'status', 'satisfacao', 'resolved_at'];
+    protected $fillable = ['estabelecimento_id', 'cliente_id', 'canal_id', 'assigned_to', 'setor', 'status', 'satisfacao', 'resolved_at'];
 
     protected function casts(): array
     {

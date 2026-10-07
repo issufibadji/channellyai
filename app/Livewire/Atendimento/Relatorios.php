@@ -3,6 +3,7 @@
 namespace App\Livewire\Atendimento;
 
 use App\Models\Atendimento\Atendimento;
+use App\Services\CurrentEstabelecimento;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -35,6 +36,7 @@ class Relatorios extends Component
 
         $porCanal = (clone $this->baseQuery())
             ->join('canais', 'canais.id', '=', 'atendimentos.canal_id')
+            ->where('canais.estabelecimento_id', app(CurrentEstabelecimento::class)->id())
             ->selectRaw('canais.nome as canal, count(*) as total')
             ->groupBy('canais.nome')
             ->pluck('total', 'canal');

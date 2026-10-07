@@ -8,11 +8,19 @@ use App\Models\Atendimento\ChatbotRegra;
 use App\Models\Atendimento\Cliente;
 use App\Services\Atendimento\ChatbotEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\WithEstabelecimentoAtual;
 use Tests\TestCase;
 
 class ChatbotEngineTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithEstabelecimentoAtual;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->definirEstabelecimentoAtual($this->criarEstabelecimento());
+    }
 
     private function atendimento(): Atendimento
     {

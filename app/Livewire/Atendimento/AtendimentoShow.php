@@ -5,6 +5,7 @@ namespace App\Livewire\Atendimento;
 use App\Models\Atendimento\Atendimento;
 use App\Models\User;
 use App\Services\Atendimento\ChatbotEngine;
+use App\Services\CurrentEstabelecimento;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -20,6 +21,11 @@ class AtendimentoShow extends Component
 
     public function mount(Atendimento $atendimento): void
     {
+        // A resolução do route-model-binding roda antes do middleware "setEstabelecimento"
+        // (prioridade fixa do Laravel), então o escopo global pode ter usado um contexto
+        // de estabelecimento desatualizado — revalida aqui, já com o contexto correto.
+        abort_unless($atendimento->estabelecimento_id === app(CurrentEstabelecimento::class)->id(), 404);
+
         $this->atendimento = $atendimento;
     }
 

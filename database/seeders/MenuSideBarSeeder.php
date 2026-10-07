@@ -98,5 +98,10 @@ class MenuSideBarSeeder extends Seeder
             ['route_name' => 'admin.announcements.index'],
             ['label' => 'Anúncios', 'group' => self::GRUPO_ADMINISTRACAO, 'icon' => 'megaphone', 'permission' => 'send-notifications', 'order' => 16],
         );
+
+        MenuSideBar::query()->updateOrCreate(
+            ['route_name' => 'admin.estabelecimentos.index'],
+            ['label' => 'Estabelecimentos', 'group' => self::GRUPO_ADMINISTRACAO, 'icon' => 'building-office-2', 'permission' => 'manage-estabelecimentos', 'order' => 17],
+        );
     }
 }

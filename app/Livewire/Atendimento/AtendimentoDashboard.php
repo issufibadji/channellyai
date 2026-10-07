@@ -3,6 +3,7 @@
 namespace App\Livewire\Atendimento;
 
 use App\Models\Atendimento\Atendimento;
+use App\Services\CurrentEstabelecimento;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -11,6 +12,7 @@ class AtendimentoDashboard extends Component
 {
     public function render()
     {
+        $estabelecimentoId = app(CurrentEstabelecimento::class)->id();
         $trend = collect(range(13, 0))->map(function (int $daysAgo) {
             $date = now()->subDays($daysAgo);
 
@@ -27,6 +29,7 @@ class AtendimentoDashboard extends Component
 
         $canalCounts = Atendimento::query()
             ->join('canais', 'canais.id', '=', 'atendimentos.canal_id')
+            ->where('canais.estabelecimento_id', $estabelecimentoId)
             ->selectRaw('canais.nome as canal, count(*) as total')
             ->groupBy('canais.nome')
             ->orderByDesc('total')

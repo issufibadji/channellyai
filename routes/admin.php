@@ -3,6 +3,7 @@
 use App\Livewire\Admin\AnnouncementManager;
 use App\Livewire\Admin\AppConfigManager;
 use App\Livewire\Admin\AuditManager;
+use App\Livewire\Admin\EstabelecimentoManager;
 use App\Livewire\Admin\MenuSideBarManager;
 use App\Livewire\Admin\PermissionManager;
 use App\Livewire\Admin\RoleManager;
@@ -33,4 +34,7 @@ Route::middleware(['auth', 'verified', 'check2fa'])->group(function () {
 
     Route::middleware('checkPermission:send-notifications')
         ->get('admin/announcements', AnnouncementManager::class)->name('admin.announcements.index');
+
+    Route::middleware('checkPermission:manage-estabelecimentos')
+        ->get('admin/estabelecimentos', EstabelecimentoManager::class)->name('admin.estabelecimentos.index');
 });

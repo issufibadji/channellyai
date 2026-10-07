@@ -2,6 +2,7 @@
 
 namespace App\Models\Atendimento;
 
+use App\Concerns\BelongsToEstabelecimento;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Auditable;
@@ -9,11 +10,11 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 class Cliente extends Model implements AuditableContract
 {
-    use Auditable;
+    use Auditable, BelongsToEstabelecimento;
 
     protected $table = 'clientes';
 
-    protected $fillable = ['nome', 'email', 'telefone', 'documento', 'notas'];
+    protected $fillable = ['estabelecimento_id', 'nome', 'email', 'telefone', 'documento', 'notas'];
 
     public function atendimentos(): HasMany
     {
