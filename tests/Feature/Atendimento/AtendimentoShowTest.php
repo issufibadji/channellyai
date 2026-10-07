@@ -5,7 +5,6 @@ namespace Tests\Feature\Atendimento;
 use App\Livewire\Atendimento\AtendimentoShow;
 use App\Models\Atendimento\Atendimento;
 use App\Models\Atendimento\Canal;
-use App\Models\Atendimento\ChatbotRegra;
 use App\Models\Atendimento\Cliente;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -44,30 +43,20 @@ class AtendimentoShowTest extends TestCase
         return $user;
     }
 
-    public function test_client_message_triggers_a_matching_chatbot_rule(): void
+    public function test_atendimento_criado_sem_origem_explicita_recebe_origem_manual(): void
     {
-        ChatbotRegra::create(['gatilho' => 'boleto', 'resposta' => 'Aqui está seu boleto.', 'ativo' => true]);
-
-        Livewire::actingAs($this->operator())
-            ->test(AtendimentoShow::class, ['atendimento' => $this->atendimento])
-            ->set('remetente', 'cliente')
-            ->set('mensagem', 'Preciso da segunda via do boleto')
-            ->call('enviarMensagem');
-
-        $this->assertDatabaseHas('atendimento_mensagens', ['remetente' => 'cliente', 'conteudo' => 'Preciso da segunda via do boleto']);
-        $this->assertDatabaseHas('atendimento_mensagens', ['remetente' => 'ia', 'conteudo' => 'Aqui está seu boleto.']);
+        $this->assertSame('manual', $this->atendimento->fresh()->origem);
     }
 
-    public function test_client_message_without_matching_rule_transfers_to_outros(): void
+    public function test_client_message_is_recorded(): void
     {
         Livewire::actingAs($this->operator())
             ->test(AtendimentoShow::class, ['atendimento' => $this->atendimento])
             ->set('remetente', 'cliente')
-            ->set('mensagem', 'algo bem específico e não mapeado')
+            ->set('mensagem', 'Preciso de ajuda')
             ->call('enviarMensagem');
 
-        $this->assertSame('outros', $this->atendimento->fresh()->setor);
-        $this->assertSame('aguardando', $this->atendimento->fresh()->status);
+        $this->assertDatabaseHas('atendimento_mensagens', ['remetente' => 'cliente', 'conteudo' => 'Preciso de ajuda']);
     }
 
     public function test_attendant_reply_assigns_and_moves_to_em_atendimento(): void
@@ -83,20 +72,6 @@ class AtendimentoShowTest extends TestCase
         $fresh = $this->atendimento->fresh();
         $this->assertSame('em_atendimento', $fresh->status);
         $this->assertSame($operator->id, $fresh->assigned_to);
-    }
-
-    public function test_client_message_is_not_auto_answered_once_a_human_has_taken_over(): void
-    {
-        ChatbotRegra::create(['gatilho' => 'boleto', 'resposta' => 'Aqui está seu boleto.', 'ativo' => true]);
-        $this->atendimento->update(['status' => 'em_atendimento']);
-
-        Livewire::actingAs($this->operator())
-            ->test(AtendimentoShow::class, ['atendimento' => $this->atendimento])
-            ->set('remetente', 'cliente')
-            ->set('mensagem', 'boleto por favor')
-            ->call('enviarMensagem');
-
-        $this->assertDatabaseMissing('atendimento_mensagens', ['remetente' => 'ia']);
     }
 
     public function test_status_and_setor_can_be_updated_manually(): void

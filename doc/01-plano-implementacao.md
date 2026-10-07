@@ -157,19 +157,37 @@ Depende de: Fases 1–6 (precisa ter ações reais para auditar).
 Depende de: Core completo (Fases 0–7). Detalhamento completo em `04-atendimento-ia.md`.
 
 - [x] Entidade única de Atendimento (`atendimentos`, `atendimento_mensagens`) e normalização interna — **integrações reais com WhatsApp/Instagram/Facebook/E-mail ainda não implementadas** (dependem de credenciais/API externas)
-- [x] Motor de chatbot **MVP** por regras de palavra-chave (`ChatbotEngine`), com transferência para setor — pensado como stub por trás de uma interface estável, pronto para trocar pelo agente de IA real (nanoclaw) sem alterar o resto do sistema
-- [x] Painel: Dashboard (com gráfico de tendência, breakdown por status/canal), Atendimentos (lista + chat), Clientes, Canais, IA e Chatbot (regras), Relatórios
+- [x] Painel: Dashboard (com gráfico de tendência, breakdown por status/canal), Atendimentos (lista + chat), Clientes, Canais, IA e Chatbot (config do agente), Relatórios
 - [x] Integração com Menu, RBAC, App Config e Audit do Core (sem duplicar mecanismos) — Notificações do Core ainda não é usada para avisar atendente sobre transferência (gap, ver abaixo)
 
 **Pendências conhecidas (ver checklist detalhado em `04-atendimento-ia.md`):**
 
-- Integrações reais de canal (WhatsApp/Instagram/Facebook/E-mail) — hoje as mensagens são só inseridas manualmente/simuladas na tela
-- Substituir o `ChatbotEngine` por regras pelo agente de IA real (nanoclaw)
+- Integrações reais de canal (WhatsApp/Instagram/Facebook/E-mail) — hoje as mensagens são só inseridas manualmente na tela
+- Publicação do agente para o motor externo (NanoClaw) — ver Fase 8.5
 - Fluxos de IA que dependem de sistemas externos (agendamento, segunda via de boleto) — fora de escopo até haver integração real
 - Notificar atendente via Notificações do Core quando um atendimento é transferido
 - Export de relatórios (CSV/PDF)
 
 **Critério de conclusão:** parcialmente atendido — painel funcional com dados reais, mas domínio ainda não está pronto pra produção real de atendimento multicanal (ver Fase 9).
+
+---
+
+## Fase 8.5 — Multi-estabelecimento e Agente ✅ Concluída (publicação pendente)
+
+Depende de: Fase 8. Detalhamento completo em `07-multi-estabelecimento.md`.
+
+- [x] Entidade `Estabelecimento` (nome, slug único/imutável, tipo de negócio, ativo) e vínculo muitos-para-muitos com usuários
+- [x] Contexto de estabelecimento atual por sessão, com seletor no topbar; admin escolhe livremente, usuário com 1 vínculo entra direto, sem vínculo vê tela informativa
+- [x] Isolamento por `estabelecimento_id` + global scope em `Cliente`, `Canal`, `Atendimento` (migração em 3 passos, dados existentes migrados para o estabelecimento padrão `consultorio-beta`)
+- [x] CRUD de Estabelecimentos no admin, com vínculo de usuários
+- [x] Entidade `Agente` (um ou mais por estabelecimento) com dados de negócio e serviços
+- [x] Tela "IA e Chatbot" reaproveitada como configuração do agente (antes era o motor de regras por palavra-chave, removido nesta fase)
+- [x] Gerador puro de `negocio.md` (`NegocioMarkdownGenerator`) com pré-visualização na tela
+- [ ] Publicação do `negocio.md` para o NanoClaw — só o ponto de extensão (`PublicadorDeAgente`) existe, sem implementação
+
+**Removido nesta fase:** `ChatbotEngine`, `ChatbotResponse`, model e tabela `chatbot_regras`, e os testes do motor por palavra-chave — substituídos pela configuração do agente.
+
+**Critério de conclusão:** atendido para isolamento multi-estabelecimento e cadastro do agente; a publicação para o NanoClaw fica para uma etapa futura.
 
 ---
 

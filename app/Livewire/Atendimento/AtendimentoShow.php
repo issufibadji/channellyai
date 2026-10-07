@@ -4,7 +4,6 @@ namespace App\Livewire\Atendimento;
 
 use App\Models\Atendimento\Atendimento;
 use App\Models\User;
-use App\Services\Atendimento\ChatbotEngine;
 use App\Services\CurrentEstabelecimento;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -29,7 +28,7 @@ class AtendimentoShow extends Component
         $this->atendimento = $atendimento;
     }
 
-    public function enviarMensagem(ChatbotEngine $engine): void
+    public function enviarMensagem(): void
     {
         $this->validate([
             'mensagem' => 'required|string|max:2000',
@@ -44,19 +43,6 @@ class AtendimentoShow extends Component
 
         if ($this->remetente === 'atendente' && $this->atendimento->status === 'aberto') {
             $this->atendimento->update(['status' => 'em_atendimento', 'assigned_to' => Auth::id()]);
-        }
-
-        if ($this->remetente === 'cliente' && $this->atendimento->status !== 'em_atendimento') {
-            $resposta = $engine->responder($this->atendimento, $this->mensagem);
-
-            $this->atendimento->mensagens()->create([
-                'remetente' => 'ia',
-                'conteudo' => $resposta->resposta,
-            ]);
-
-            if ($resposta->setorTransferencia) {
-                $this->atendimento->update(['setor' => $resposta->setorTransferencia, 'status' => 'aguardando']);
-            }
         }
 
         $this->reset('mensagem');

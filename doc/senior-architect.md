@@ -17,8 +17,8 @@ Toolkit completo para arquiteto sênior com foco no ecossistema Laravel moderno.
 | Framework    | Laravel 13                                      |
 | Frontend     | Livewire 4 + Alpine.js + Tailwind CSS           |
 | Banco        | MySQL 8+ (via Eloquent ORM)                     |
-| Auth         | Laravel Sanctum + Spatie Permission + 2FA       |
-| Testes       | PHPUnit + Pest PHP                              |
+| Auth         | Spatie Permission + 2FA (Sanctum ainda não instalado — sem API hoje) |
+| Testes       | PHPUnit (classes, não Pest)                     |
 | Build        | Vite (Laravel Plugin)                           |
 | DevOps       | Docker / Laravel Sail / GitHub Actions          |
 | Qualidade    | Laravel Pint (PSR-12) + Larastan (PHPStan)      |

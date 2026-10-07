@@ -94,11 +94,11 @@ Este domínio **usa** a infraestrutura do Core, mas não a reimplementa:
 
 ## Estado Atual
 
-A **infraestrutura do painel está implementada e testada** (models, telas, RBAC, menu, audit). As **integrações reais de canal e o motor de IA definitivo ainda não** — foram propositalmente deixados como stub/MVP para permitir avançar sem depender da conclusão do agente externo (nanoclaw). Ver `01-plano-implementacao.md` → Fase 8 para o resumo executivo.
+A **infraestrutura do painel está implementada e testada** (models, telas, RBAC, menu, audit), agora com **isolamento por estabelecimento** (ver `07-multi-estabelecimento.md`). As **integrações reais de canal e a publicação do agente para o motor externo (NanoClaw) ainda não** existem.
 
-**Modelagem implementada** (`app/Models/Atendimento/*`): `Cliente`, `Canal`, `Atendimento`, `AtendimentoMensagem`, `ChatbotRegra` — todas auditadas (exceto mensagens, por volume).
+**Modelagem implementada** (`app/Models/Atendimento/*`): `Cliente`, `Canal`, `Atendimento` (com `estabelecimento_id`, `origem`, `resumo`), `AtendimentoMensagem` — todas auditadas (exceto mensagens, por volume).
 
-**Contrato de integração com o agente de IA:** `App\Services\Atendimento\ChatbotEngine::responder(Atendimento $atendimento, string $mensagemCliente): ChatbotResponse`. A implementação atual casa a mensagem do cliente por palavra-chave contra `chatbot_regras` (tela "IA e Chatbot") e retorna resposta + setor de transferência opcional. **Quando o nanoclaw estiver pronto, trocar a implementação desta classe mantendo a mesma assinatura** — nenhum outro ponto do sistema precisa mudar.
+**O motor de regras por palavra-chave (`ChatbotEngine`/`ChatbotRegra`) foi removido.** A tela "IA e Chatbot" passou a ser a configuração do Agente do estabelecimento atual (`App\Models\Agente`, `AgenteDadosNegocio`, `AgenteServico`): dados de negócio (tom de voz, endereço, horário, antecedência para agendar, calendarId, profissionais, políticas, encaminhamento humano) e serviços (nome, duração, preço). `App\Services\Agente\NegocioMarkdownGenerator` gera o `negocio.md` a partir desses dados, com botão de pré-visualização. A publicação desse arquivo para o NanoClaw ainda não existe — só o ponto de extensão `App\Contracts\PublicadorDeAgente` está definido.
 
 ---
 
@@ -111,18 +111,18 @@ A **infraestrutura do painel está implementada e testada** (models, telas, RBAC
 - [ ] Integração com Facebook — **pendente**
 - [ ] Widget de chat para o site — **pendente**
 - [ ] Integração com E-mail (recebimento e resposta) — **pendente**
-- [x] Normalização de mensagens em uma entidade única de Atendimento — implementada internamente (`atendimentos` + `atendimento_mensagens`); hoje a única forma de entrada é a tela de Atendimento (inserção manual/simulada), não webhooks reais dos canais acima
-- [x] Cadastro de Canais (tela CRUD) — tipo, nome, ativo/inativo; a `configuracao` (JSON) existe no schema para credenciais de API, mas nenhuma integração a lê ainda
+- [x] Normalização de mensagens em uma entidade única de Atendimento — implementada internamente (`atendimentos` + `atendimento_mensagens`); hoje a única forma de entrada é a tela de Atendimento (inserção manual), não webhooks reais dos canais acima; campo `origem` (`manual`/`agente`) e `resumo` preparam a tela para receber encaminhamentos do agente no futuro
+- [x] Cadastro de Canais (tela CRUD) — tipo, nome, ativo/inativo, isolado por estabelecimento; a `configuracao` (JSON) existe no schema para credenciais de API, mas nenhuma integração a lê ainda
 
 ### IA & Chatbot
 
-- [x] Motor de resposta automática por palavra-chave (`ChatbotEngine`) — **MVP/stub**, não é um modelo de IA real
-- [x] Regras de transferência para setor humano (Vendas, Suporte, Financeiro, Logística, Outros) — tela "IA e Chatbot" (`chatbot_regras`)
-- [ ] Motor de IA real (substituir o stub pelo agente nanoclaw)
+- [x] Cadastro do Agente de IA por estabelecimento (`Agente`, `AgenteDadosNegocio`, `AgenteServico`) — tela "IA e Chatbot"
+- [x] Gerador puro do `negocio.md` (`NegocioMarkdownGenerator`) com pré-visualização na tela
+- [ ] Publicação do `negocio.md` para o motor externo (NanoClaw) — ponto de extensão `PublicadorDeAgente` definido, sem implementação
 - [ ] Fluxo de marcação de compromissos via IA — depende de integração com sistema de agenda (fora de escopo até então)
 - [ ] Fluxo de segunda via de pagamento/boleto via IA — depende de integração com sistema financeiro (fora de escopo até então)
 - [ ] Envio de informativos e avisos via IA
-- [x] Respostas a dúvidas frequentes (FAQ) — coberto pelo motor por palavra-chave atual, de forma limitada
+- [ ] Respostas automáticas a dúvidas frequentes via o agente real (o motor antigo por palavra-chave foi removido)
 
 ### Painel
 

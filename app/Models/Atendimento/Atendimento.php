@@ -31,7 +31,12 @@ class Atendimento extends Model implements AuditableContract
         'outros' => 'Outros',
     ];
 
-    protected $fillable = ['estabelecimento_id', 'cliente_id', 'canal_id', 'assigned_to', 'setor', 'status', 'satisfacao', 'resolved_at'];
+    public const ORIGENS = [
+        'manual' => 'Manual',
+        'agente' => 'Agente de IA',
+    ];
+
+    protected $fillable = ['estabelecimento_id', 'cliente_id', 'canal_id', 'assigned_to', 'setor', 'status', 'satisfacao', 'resolved_at', 'origem', 'resumo'];
 
     protected function casts(): array
     {
