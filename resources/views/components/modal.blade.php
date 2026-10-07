@@ -8,12 +8,12 @@
     x-cloak
     class="fixed inset-0 z-50 flex items-center justify-center p-4"
 >
-    <div x-show="open" x-transition.opacity @click="open = false" class="absolute inset-0 bg-black/60"></div>
+    <div x-show="open" x-transition.opacity @mousedown="open = false" class="absolute inset-0 bg-black/60"></div>
 
     <div
         x-show="open"
         x-transition
-        @click.outside="open = false"
+        @mousedown.outside="open = false"
         @keydown.escape.window="open = false"
         class="relative w-full max-w-lg bg-surface-card border border-surface-border rounded-xl p-6"
     >
