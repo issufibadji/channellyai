@@ -2,90 +2,185 @@
 
 namespace App\Livewire\Atendimento;
 
-use App\Models\Atendimento\Atendimento;
-use App\Models\Atendimento\ChatbotRegra;
+use App\Models\Agente;
+use App\Models\AgenteDadosNegocio;
+use App\Models\AgenteServico;
+use App\Services\Agente\NegocioMarkdownGenerator;
+use App\Services\CurrentEstabelecimento;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 #[Layout('components.layouts.master')]
 class ChatbotManager extends Component
 {
-    public ?int $regraId = null;
+    public Agente $agente;
 
-    public string $gatilho = '';
+    public string $nomeExibicao = '';
 
-    public string $resposta = '';
+    public string $tomDeVoz = '';
 
-    public string $setorTransferencia = '';
+    public string $endereco = '';
 
-    public bool $ativo = true;
+    public string $horarioFuncionamento = '';
 
-    public int $order = 0;
+    public string $antecedenciaMinima = '';
 
-    public function create(): void
+    public string $calendarId = '';
+
+    public string $profissionais = '';
+
+    public array $politicas = [];
+
+    public string $novaPolitica = '';
+
+    public string $contatoHumano = '';
+
+    public string $mensagemEncaminhamento = '';
+
+    public array $servicos = [];
+
+    public ?string $preview = null;
+
+    public function mount(): void
     {
-        $this->reset(['regraId', 'gatilho', 'resposta', 'setorTransferencia', 'order']);
-        $this->ativo = true;
-        $this->resetErrorBag();
-        $this->dispatch('open-modal', name: 'regra-form');
+        $estabelecimentoId = app(CurrentEstabelecimento::class)->id();
+        $nomeEstabelecimento = app(CurrentEstabelecimento::class)->estabelecimento()?->nome ?? 'Agente';
+
+        $this->agente = Agente::firstOrCreate(
+            ['estabelecimento_id' => $estabelecimentoId],
+            ['nome' => $nomeEstabelecimento],
+        );
+
+        $this->carregarDados();
     }
 
-    public function edit(int $id): void
+    private function carregarDados(): void
     {
-        $regra = ChatbotRegra::findOrFail($id);
+        $this->agente->load(['dadosNegocio', 'servicos']);
+        $dados = $this->agente->dadosNegocio;
 
-        $this->regraId = $regra->id;
-        $this->gatilho = $regra->gatilho;
-        $this->resposta = $regra->resposta ?? '';
-        $this->setorTransferencia = $regra->setor_transferencia ?? '';
-        $this->ativo = $regra->ativo;
-        $this->order = $regra->order;
+        $this->nomeExibicao = $dados?->nome_exibicao ?? '';
+        $this->tomDeVoz = $dados?->tom_de_voz ?? '';
+        $this->endereco = $dados?->endereco ?? '';
+        $this->horarioFuncionamento = $dados?->horario_funcionamento ?? '';
+        $this->antecedenciaMinima = $dados?->antecedencia_minima ?? '';
+        $this->calendarId = $dados?->calendar_id ?? '';
+        $this->profissionais = $dados?->profissionais ?? '';
+        $this->politicas = $dados?->politicas ?? [];
+        $this->contatoHumano = $dados?->contato_humano ?? '';
+        $this->mensagemEncaminhamento = $dados?->mensagem_encaminhamento ?? '';
 
-        $this->resetErrorBag();
-        $this->dispatch('open-modal', name: 'regra-form');
+        $this->servicos = $this->agente->servicos->map(fn ($servico) => [
+            'id' => $servico->id,
+            'nome' => $servico->nome,
+            'duracaoMinutos' => $servico->duracao_minutos,
+            'preco' => (string) $servico->preco,
+        ])->values()->all();
+    }
+
+    public function addServico(): void
+    {
+        $this->servicos[] = ['id' => null, 'nome' => '', 'duracaoMinutos' => '', 'preco' => ''];
+    }
+
+    public function removeServico(int $index): void
+    {
+        unset($this->servicos[$index]);
+        $this->servicos = array_values($this->servicos);
+    }
+
+    public function addPolitica(): void
+    {
+        if (trim($this->novaPolitica) !== '') {
+            $this->politicas[] = $this->novaPolitica;
+            $this->novaPolitica = '';
+        }
+    }
+
+    public function removePolitica(int $index): void
+    {
+        unset($this->politicas[$index]);
+        $this->politicas = array_values($this->politicas);
     }
 
     public function save(): void
     {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
         $this->validate([
-            'gatilho' => 'required|string|max:255',
-            'resposta' => 'nullable|string|max:1000',
-            'setorTransferencia' => 'nullable|string|in:'.implode(',', array_keys(Atendimento::SETORES)),
-            'order' => 'integer|min:0',
+            'nomeExibicao' => 'required|string|max:255',
+            'antecedenciaMinima' => 'required|string|max:255',
+            'calendarId' => 'nullable|string|max:255',
+            'servicos.*.nome' => 'required|string|max:255',
+            'servicos.*.duracaoMinutos' => 'required|integer|min:1',
+            'servicos.*.preco' => 'required|numeric|min:0',
         ]);
 
-        ChatbotRegra::updateOrCreate(
-            ['id' => $this->regraId],
-            [
-                'gatilho' => $this->gatilho,
-                'resposta' => $this->resposta ?: null,
-                'setor_transferencia' => $this->setorTransferencia ?: null,
-                'ativo' => $this->ativo,
-                'order' => $this->order,
-            ],
-        );
+        $this->agente->dadosNegocio()->updateOrCreate([], [
+            'nome_exibicao' => $this->nomeExibicao,
+            'tom_de_voz' => $this->tomDeVoz ?: null,
+            'endereco' => $this->endereco ?: null,
+            'horario_funcionamento' => $this->horarioFuncionamento ?: null,
+            'antecedencia_minima' => $this->antecedenciaMinima,
+            'calendar_id' => $this->calendarId ?: null,
+            'profissionais' => $this->profissionais ?: null,
+            'politicas' => $this->politicas,
+            'contato_humano' => $this->contatoHumano ?: null,
+            'mensagem_encaminhamento' => $this->mensagemEncaminhamento ?: null,
+        ]);
 
-        $this->dispatch('close-modal');
-        session()->flash('success', 'Regra salva com sucesso.');
+        $idsMantidos = [];
+
+        foreach ($this->servicos as $servico) {
+            $registro = $this->agente->servicos()->updateOrCreate(
+                ['id' => $servico['id'] ?? null],
+                [
+                    'nome' => $servico['nome'],
+                    'duracao_minutos' => $servico['duracaoMinutos'],
+                    'preco' => $servico['preco'],
+                ],
+            );
+
+            $idsMantidos[] = $registro->id;
+        }
+
+        $this->agente->servicos()->whereNotIn('id', $idsMantidos ?: [0])->delete();
+
+        $this->carregarDados();
+
+        session()->flash('success', 'Dados do agente salvos com sucesso.');
     }
 
-    public function toggleAtivo(int $id): void
+    public function visualizar(NegocioMarkdownGenerator $generator): void
     {
-        $regra = ChatbotRegra::findOrFail($id);
-        $regra->update(['ativo' => ! $regra->ativo]);
-    }
+        // Gera a partir do estado atual do formulário (ainda não salvo), não do banco.
+        $dados = new AgenteDadosNegocio([
+            'nome_exibicao' => $this->nomeExibicao,
+            'tom_de_voz' => $this->tomDeVoz ?: null,
+            'endereco' => $this->endereco ?: null,
+            'horario_funcionamento' => $this->horarioFuncionamento ?: null,
+            'antecedencia_minima' => $this->antecedenciaMinima,
+            'calendar_id' => $this->calendarId ?: null,
+            'profissionais' => $this->profissionais ?: null,
+            'politicas' => $this->politicas,
+            'contato_humano' => $this->contatoHumano ?: null,
+            'mensagem_encaminhamento' => $this->mensagemEncaminhamento ?: null,
+        ]);
 
-    public function delete(int $id): void
-    {
-        ChatbotRegra::findOrFail($id)->delete();
+        $servicos = collect($this->servicos)->map(fn ($servico) => new AgenteServico([
+            'nome' => $servico['nome'],
+            'duracao_minutos' => $servico['duracaoMinutos'],
+            'preco' => $servico['preco'],
+        ]));
 
-        session()->flash('success', 'Regra removida.');
+        $this->agente->setRelation('dadosNegocio', $dados);
+        $this->agente->setRelation('servicos', $servicos);
+
+        $this->preview = $generator->gerar($this->agente);
     }
 
     public function render()
     {
-        return view('livewire.atendimento.chatbot-manager', [
-            'regras' => ChatbotRegra::orderBy('order')->orderBy('gatilho')->get(),
-        ]);
+        return view('livewire.atendimento.chatbot-manager');
     }
 }

@@ -1,84 +1,116 @@
 <div>
     <div class="flex items-center justify-between mb-2">
         <h1 class="text-2xl font-semibold text-text-primary">IA e Chatbot</h1>
-        <x-button wire:click="create">+ Nova regra</x-button>
     </div>
     <p class="text-sm text-text-secondary mb-6">
-        Regras de resposta automática por palavra-chave. Quando nenhuma regra corresponde, o atendimento é transferido para o setor "Outros".
+        Dados do negócio usados pelo agente de IA deste estabelecimento. Pasta de publicação: <span class="font-mono">{{ $agente->group_folder }}</span>.
     </p>
 
-    <x-table :headers="['Gatilho', 'Resposta', 'Transfere para', 'Ordem', 'Status', 'Ações']">
-        @forelse ($regras as $regra)
-            <tr>
-                <td class="px-4 py-3 font-mono text-sm">{{ $regra->gatilho }}</td>
-                <td class="px-4 py-3 text-text-secondary max-w-xs truncate">{{ $regra->resposta ?? '—' }}</td>
-                <td class="px-4 py-3 text-text-secondary">{{ \App\Models\Atendimento\Atendimento::SETORES[$regra->setor_transferencia] ?? '—' }}</td>
-                <td class="px-4 py-3">{{ $regra->order }}</td>
-                <td class="px-4 py-3">
-                    <x-badge :variant="$regra->ativo ? 'success' : 'default'">{{ $regra->ativo ? 'Ativa' : 'Inativa' }}</x-badge>
-                </td>
-                <td class="px-4 py-3 text-right whitespace-nowrap space-x-3">
-                    <button wire:click="edit({{ $regra->id }})" class="text-primary hover:underline text-sm">Editar</button>
-                    <button wire:click="toggleAtivo({{ $regra->id }})" class="text-text-secondary hover:underline text-sm">
-                        {{ $regra->ativo ? 'Desativar' : 'Ativar' }}
-                    </button>
-                    <button
-                        wire:click="delete({{ $regra->id }})"
-                        wire:confirm="Remover esta regra?"
-                        class="text-danger hover:underline text-sm"
-                    >
-                        Excluir
-                    </button>
-                </td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="6" class="px-4 py-6 text-center text-text-secondary">Nenhuma regra cadastrada.</td>
-            </tr>
-        @endforelse
-    </x-table>
+    <form wire:submit="save" class="space-y-6 max-w-3xl">
+        <x-card>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Nome de exibição</label>
+                    <input type="text" wire:model="nomeExibicao" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    @error('nomeExibicao') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Tom de voz</label>
+                    <input type="text" wire:model="tomDeVoz" placeholder="ex.: cordial e direto" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Endereço</label>
+                    <input type="text" wire:model="endereco" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Horário de funcionamento</label>
+                    <input type="text" wire:model="horarioFuncionamento" placeholder="ex.: seg a sáb, 9h às 19h" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Antecedência mínima para agendar</label>
+                    <input type="text" wire:model="antecedenciaMinima" placeholder="ex.: 2 horas" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    @error('antecedenciaMinima') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Google Calendar (calendarId)</label>
+                    <input type="text" wire:model="calendarId" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Profissionais</label>
+                    <textarea wire:model="profissionais" rows="2" class="w-full rounded-md bg-surface border-surface-border text-text-primary"></textarea>
+                </div>
+            </div>
+        </x-card>
 
-    <x-modal name="regra-form" title="Regra do chatbot">
-        <form wire:submit="save" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-1 text-text-primary">Gatilho (palavra-chave)</label>
-                <input type="text" wire:model="gatilho" placeholder="ex.: boleto" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                @error('gatilho') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+        <x-card>
+            <h2 class="font-semibold text-text-primary mb-4">Serviços</h2>
+
+            <div class="space-y-3">
+                @foreach ($servicos as $index => $servico)
+                    <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-start">
+                        <div>
+                            <input type="text" wire:model="servicos.{{ $index }}.nome" placeholder="Nome do serviço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                            @error("servicos.{$index}.nome") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <input type="number" min="1" wire:model="servicos.{{ $index }}.duracaoMinutos" placeholder="Minutos" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                            @error("servicos.{$index}.duracaoMinutos") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <input type="number" step="0.01" min="0" wire:model="servicos.{{ $index }}.preco" placeholder="Preço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                            @error("servicos.{$index}.preco") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                        </div>
+                        <button type="button" wire:click="removeServico({{ $index }})" class="text-danger hover:underline text-sm pt-2">Remover</button>
+                    </div>
+                @endforeach
             </div>
 
-            <div>
-                <label class="block text-sm font-medium mb-1 text-text-primary">Resposta automática</label>
-                <textarea wire:model="resposta" rows="3" class="w-full rounded-md bg-surface border-surface-border text-text-primary"></textarea>
-                @error('resposta') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+            <button type="button" wire:click="addServico" class="mt-3 text-primary hover:underline text-sm">+ Adicionar serviço</button>
+        </x-card>
+
+        <x-card>
+            <h2 class="font-semibold text-text-primary mb-4">Políticas</h2>
+
+            <ul class="space-y-2 mb-3">
+                @foreach ($politicas as $index => $politica)
+                    <li class="flex items-center justify-between gap-3 text-sm text-text-secondary">
+                        <span>{{ $politica }}</span>
+                        <button type="button" wire:click="removePolitica({{ $index }})" class="text-danger hover:underline">Remover</button>
+                    </li>
+                @endforeach
+            </ul>
+
+            <div class="flex gap-3">
+                <input type="text" wire:model="novaPolitica" placeholder="Nova política" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                <x-button type="button" variant="secondary" wire:click="addPolitica">Adicionar</x-button>
             </div>
+        </x-card>
+
+        <x-card>
+            <h2 class="font-semibold text-text-primary mb-4">Encaminhamento humano</h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-text-primary">Transferir para o setor</label>
-                    <select wire:model="setorTransferencia" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                        <option value="">— Não transferir —</option>
-                        @foreach (\App\Models\Atendimento\Atendimento::SETORES as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('setorTransferencia') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Contato</label>
+                    <input type="text" wire:model="contatoHumano" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-text-primary">Ordem de avaliação</label>
-                    <input type="number" wire:model="order" min="0" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                    @error('order') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Mensagem</label>
+                    <input type="text" wire:model="mensagemEncaminhamento" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                 </div>
             </div>
+        </x-card>
 
-            <label class="flex items-center gap-2 text-sm text-text-secondary">
-                <input type="checkbox" wire:model="ativo" class="rounded bg-surface border-surface-border">
-                Regra ativa
-            </label>
+        <div class="flex justify-end gap-3">
+            <x-button type="button" variant="secondary" wire:click="visualizar">Pré-visualizar</x-button>
+            <x-button type="submit">Salvar</x-button>
+        </div>
+    </form>
 
-            <div class="flex justify-end gap-3 pt-2">
-                <x-button variant="secondary" type="button" @click="open = false">Cancelar</x-button>
-                <x-button type="submit">Salvar</x-button>
-            </div>
-        </form>
-    </x-modal>
+    @if ($preview)
+        <x-card class="max-w-3xl mt-6">
+            <h2 class="font-semibold text-text-primary mb-3">Pré-visualização do negocio.md</h2>
+            <pre class="whitespace-pre-wrap text-sm text-text-secondary font-mono">{{ $preview }}</pre>
+        </x-card>
+    @endif
 </div>
