@@ -44,6 +44,14 @@ class ChatbotManager extends Component
     public function mount(): void
     {
         $estabelecimentoId = app(CurrentEstabelecimento::class)->id();
+
+        if (! $estabelecimentoId) {
+            session()->flash('warning', 'Selecione um estabelecimento no topo da página antes de configurar o agente.');
+            $this->redirect(route('atendimento.dashboard'), navigate: false);
+
+            return;
+        }
+
         $nomeEstabelecimento = app(CurrentEstabelecimento::class)->estabelecimento()?->nome ?? 'Agente';
 
         $this->agente = Agente::firstOrCreate(

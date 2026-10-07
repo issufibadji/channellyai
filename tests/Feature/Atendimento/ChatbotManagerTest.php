@@ -30,6 +30,20 @@ class ChatbotManagerTest extends TestCase
         $this->actingAs($user)->get(route('atendimento.chatbot.index'))->assertForbidden();
     }
 
+    public function test_admin_without_an_estabelecimento_selected_is_redirected_instead_of_crashing(): void
+    {
+        session()->forget('current_estabelecimento_id');
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('atendimento.chatbot.index'))
+            ->assertRedirect(route('atendimento.dashboard'));
+
+        $this->assertSame(0, Agente::count());
+    }
+
     public function test_opening_the_screen_creates_an_agente_for_the_current_estabelecimento(): void
     {
         $admin = User::factory()->create();
