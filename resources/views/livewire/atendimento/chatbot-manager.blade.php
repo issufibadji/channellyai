@@ -47,7 +47,7 @@
 
             <div class="space-y-3">
                 @foreach ($servicos as $index => $servico)
-                    <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-start">
+                    <div wire:key="servico-{{ $index }}" class="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-start">
                         <div>
                             <input type="text" wire:model="servicos.{{ $index }}.nome" placeholder="Nome do serviço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                             @error("servicos.{$index}.nome") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
@@ -73,7 +73,7 @@
 
             <ul class="space-y-2 mb-3">
                 @foreach ($politicas as $index => $politica)
-                    <li class="flex items-center justify-between gap-3 text-sm text-text-secondary">
+                    <li wire:key="politica-{{ $index }}" class="flex items-center justify-between gap-3 text-sm text-text-secondary">
                         <span>{{ $politica }}</span>
                         <button type="button" wire:click="removePolitica({{ $index }})" class="text-danger hover:underline">Remover</button>
                     </li>
