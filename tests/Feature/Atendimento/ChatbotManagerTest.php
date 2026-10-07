@@ -106,6 +106,29 @@ class ChatbotManagerTest extends TestCase
         $this->assertDatabaseMissing('agente_servicos', ['nome' => 'Corte']);
     }
 
+    public function test_removing_a_politica_and_saving_persists_the_removal(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $component = Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('nomeExibicao', 'Barbearia Delta')
+            ->set('antecedenciaMinima', '2 horas')
+            ->set('novaPolitica', 'chega na hora')
+            ->call('addPolitica')
+            ->call('save');
+
+        $this->assertDatabaseHas('agente_dados_negocio', ['politicas' => json_encode(['chega na hora'])]);
+
+        $component
+            ->call('removePolitica', 0)
+            ->assertSet('politicas', [])
+            ->call('save');
+
+        $this->assertDatabaseHas('agente_dados_negocio', ['politicas' => json_encode([])]);
+    }
+
     public function test_invalid_servico_is_rejected(): void
     {
         $admin = User::factory()->create();

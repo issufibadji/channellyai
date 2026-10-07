@@ -49,6 +49,9 @@ A tela "IA e Chatbot" deixou de ser um motor de regras por palavra-chave (removi
 - Ao abrir a tela, se o estabelecimento ainda não tem nenhum Agente, um é criado automaticamente (`group_folder` default = slug do estabelecimento).
 - O formulário edita `AgenteDadosNegocio` e a lista de `AgenteServico` (adicionar/remover inline).
 - O botão **"Pré-visualizar"** gera o Markdown a partir do **estado atual do formulário** (não precisa salvar antes) usando `App\Services\Agente\NegocioMarkdownGenerator::gerar()`, uma classe pura e testada isoladamente (`tests/Unit/Agente/NegocioMarkdownGeneratorTest.php`), incluindo os casos sem serviços e com acentos/aspas/barra vertical no conteúdo.
+- O botão **"Salvar"** mostra a confirmação ("Dados do agente salvos com sucesso.") logo abaixo do formulário, perto dos botões, além da mensagem padrão no topo da página.
+
+> **Atenção ao testar com múltiplas abas:** a tela "IA e Chatbot" é um componente Livewire de página inteira — cada aba do navegador mantém seu próprio estado do formulário desde que foi carregada. Se você editar/remover algo em uma aba e salvar, uma outra aba aberta antes dessa mudança ainda está com os dados antigos; salvar nela depois sobrescreve a alteração. Recarregue a página (F5) antes de confiar no que está vendo, ou evite manter duas abas na mesma tela de edição ao mesmo tempo.
 
 ### Ponto de extensão para a publicação futura
 
