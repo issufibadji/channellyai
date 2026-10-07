@@ -101,9 +101,14 @@
             </div>
         </x-card>
 
-        <div class="flex justify-end gap-3">
-            <x-button type="button" variant="secondary" wire:click="visualizar">Pré-visualizar</x-button>
-            <x-button type="submit">Salvar</x-button>
+        @if (session('success'))
+            <x-alert variant="success">{{ session('success') }}</x-alert>
+        @endif
+
+        <div class="flex items-center justify-end gap-3">
+            <span wire:loading wire:target="save" class="text-sm text-text-secondary">Salvando...</span>
+            <x-button type="button" variant="secondary" wire:click="visualizar" wire:loading.attr="disabled" wire:target="save">Pré-visualizar</x-button>
+            <x-button type="submit" wire:loading.attr="disabled" wire:target="save">Salvar</x-button>
         </div>
     </form>
 
