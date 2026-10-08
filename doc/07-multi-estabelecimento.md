@@ -96,6 +96,7 @@ Em caso de sucesso, atualiza `status_publicacao=publicado`, `publicado_em` e `ul
 
 ## O que ficou de fora
 
-- Criação automática do agent group na VPS (`ncl groups create`) — continua manual.
-- Preenchimento de `agent_group_id` (depende do passo manual acima).
-- Leitura de conversas/canais vindos do agente de volta para o ChannellyAI (fora do escopo definido no início do trabalho).
+- Criação automática do agent group na VPS (`ncl groups create`) — continua manual. **Planejado em `doc/09-automacao-bots-telegram.md`**, junto com criar/editar/excluir o próprio bot do Telegram pelo ChannellyAI.
+- Preenchimento de `agent_group_id` (depende do passo manual acima; mesmo plano).
+- Leitura de conversas/canais vindos do agente de volta para o ChannellyAI — **feito** (ver `doc/08-webhook-nanoclaw.md`).
+- Resposta do atendente no ChannellyAI chegando de volta ao cliente real (Telegram) — ainda não iniciado, sem plano escrito ainda.
