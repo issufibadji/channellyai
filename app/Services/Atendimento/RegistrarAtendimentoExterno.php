@@ -42,14 +42,29 @@ class RegistrarAtendimentoExterno
             ]);
         }
 
-        $atendimento = Atendimento::create([
-            'estabelecimento_id' => $estabelecimentoId,
-            'cliente_id' => $clienteModel->id,
-            'canal_id' => $canalModel->id,
-            'status' => $status ?: 'aberto',
-            'origem' => 'agente',
-            'resumo' => $resumo,
-        ]);
+        $atendimento = Atendimento::withoutGlobalScope('estabelecimento')
+            ->where('estabelecimento_id', $estabelecimentoId)
+            ->where('cliente_id', $clienteModel->id)
+            ->where('canal_id', $canalModel->id)
+            ->where('status', '!=', 'resolvido')
+            ->latest()
+            ->first();
+
+        if (! $atendimento) {
+            $atendimento = Atendimento::create([
+                'estabelecimento_id' => $estabelecimentoId,
+                'cliente_id' => $clienteModel->id,
+                'canal_id' => $canalModel->id,
+                'status' => $status ?: 'aberto',
+                'origem' => 'agente',
+                'resumo' => $resumo,
+            ]);
+        } else {
+            $atendimento->update(array_filter([
+                'status' => $status,
+                'resumo' => $resumo,
+            ], fn ($valor) => $valor !== null));
+        }
 
         $atendimento->mensagens()->createMany($mensagens);
 

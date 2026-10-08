@@ -82,7 +82,7 @@ class NanoClawWebhookTest extends TestCase
         $this->assertDatabaseHas('atendimento_mensagens', ['remetente' => 'ia']);
     }
 
-    public function test_segunda_chamada_reaproveita_cliente_e_canal_existentes(): void
+    public function test_segunda_chamada_com_status_resolvido_cria_novo_atendimento(): void
     {
         $agente = $this->criarAgentePiloto();
 
@@ -94,6 +94,20 @@ class NanoClawWebhookTest extends TestCase
         $this->assertSame(1, Cliente::withoutGlobalScope('estabelecimento')->count());
         $this->assertSame(1, Canal::withoutGlobalScope('estabelecimento')->count());
         $this->assertSame(2, Atendimento::withoutGlobalScope('estabelecimento')->count());
+    }
+
+    public function test_segunda_chamada_sem_status_resolvido_anexa_no_mesmo_atendimento(): void
+    {
+        $agente = $this->criarAgentePiloto();
+
+        $headers = ['X-NanoClaw-Token' => $agente->webhook_token];
+
+        $primeira = $this->withHeaders($headers)->postJson(route('webhooks.nanoclaw'), $this->payload(['status' => 'aberto']));
+        $segunda = $this->withHeaders($headers)->postJson(route('webhooks.nanoclaw'), $this->payload(['status' => 'aberto']));
+
+        $this->assertSame(1, Atendimento::withoutGlobalScope('estabelecimento')->count());
+        $this->assertSame($primeira->json('atendimento_id'), $segunda->json('atendimento_id'));
+        $this->assertSame(4, Atendimento::withoutGlobalScope('estabelecimento')->first()->mensagens()->count());
     }
 
     public function test_token_regenerado_invalida_o_token_antigo(): void

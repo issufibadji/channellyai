@@ -42,12 +42,12 @@ Payload inválido: `422`, com os erros de validação padrão do Laravel.
 
 ## Comportamento
 
-Cada chamada registra **um `Atendimento` novo** (`origem = 'agente'`), com todas as `mensagens` do payload anexadas de uma vez — o modelo é "a conversa aconteceu/terminou, me avise", não sincronização incremental mensagem a mensagem (evita precisar de um campo de id externo pra deduplicar mensagens).
+Cada chamada anexa as `mensagens` do payload a um `Atendimento` (`origem = 'agente'`) — não é preciso informar um id externo, a dedução de qual atendimento usar é automática (ver abaixo). Não há sincronização incremental mensagem a mensagem: cada chamada manda o lote inteiro de mensagens novas daquele instante.
 
 Reaproveitamento entre chamadas:
 - **Canal**: reaproveita o canal do estabelecimento com aquele `tipo` se já existir; cria se não.
 - **Cliente**: reaproveita por `telefone` dentro do estabelecimento; cria se não existir.
-- **Atendimento**: sempre cria um novo a cada chamada.
+- **Atendimento**: reaproveita o atendimento mais recente do mesmo cliente+canal **enquanto o status não for `resolvido`** — as mensagens novas são anexadas nele, e `status`/`resumo` do payload (quando enviados) atualizam o registro existente. Só cria um atendimento novo quando não existe nenhum em aberto (primeira conversa, ou a conversa anterior já foi marcada `resolvido`). Isso evita que uma integração que chama o webhook periodicamente (ex.: um polling a cada N segundos) fragmente uma única conversa em vários atendimentos — a conversa só "vira página" quando alguém a marca como resolvida.
 
 Resposta de sucesso: `201 { "atendimento_id": <int> }`.
 

@@ -49,21 +49,39 @@ class RegistrarAtendimentoExternoTest extends TestCase
         $this->assertSame(2, $atendimento->mensagens()->count());
     }
 
-    public function test_reaproveita_cliente_e_canal_em_chamadas_seguintes(): void
+    public function test_reaproveita_cliente_canal_e_atendimento_aberto_em_chamadas_seguintes(): void
     {
         $agente = $this->criarAgente();
         $service = new RegistrarAtendimentoExterno;
 
-        $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
+        $primeiro = $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
             ['remetente' => 'cliente', 'conteudo' => 'Oi'],
         ]);
-        $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
+        $segundo = $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
             ['remetente' => 'cliente', 'conteudo' => 'De novo'],
         ]);
 
         $this->assertSame(1, Cliente::withoutGlobalScope('estabelecimento')->count());
         $this->assertSame(1, Canal::withoutGlobalScope('estabelecimento')->count());
+        $this->assertSame(1, Atendimento::withoutGlobalScope('estabelecimento')->count());
+        $this->assertSame($primeiro->id, $segundo->id);
+        $this->assertSame(2, $segundo->mensagens()->count());
+    }
+
+    public function test_cria_novo_atendimento_quando_o_anterior_esta_resolvido(): void
+    {
+        $agente = $this->criarAgente();
+        $service = new RegistrarAtendimentoExterno;
+
+        $primeiro = $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, 'resolvido', [
+            ['remetente' => 'cliente', 'conteudo' => 'Oi'],
+        ]);
+        $segundo = $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
+            ['remetente' => 'cliente', 'conteudo' => 'Nova conversa'],
+        ]);
+
         $this->assertSame(2, Atendimento::withoutGlobalScope('estabelecimento')->count());
+        $this->assertNotSame($primeiro->id, $segundo->id);
     }
 
     public function test_status_default_aberto_quando_nao_informado(): void
