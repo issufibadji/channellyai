@@ -64,10 +64,7 @@ class ChatbotManagerTest extends TestCase
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('tomDeVoz', 'descontraído')
             ->set('antecedenciaMinima', '2 horas')
-            ->call('addServico')
-            ->set('servicos.0.nome', 'Corte')
-            ->set('servicos.0.duracaoMinutos', 30)
-            ->set('servicos.0.preco', '35.00')
+            ->set('servicos', [['id' => null, 'nome' => 'Corte', 'duracaoMinutos' => 30, 'preco' => '35.00']])
             ->call('save')
             ->assertHasNoErrors();
 
@@ -91,16 +88,13 @@ class ChatbotManagerTest extends TestCase
             ->test(ChatbotManager::class)
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
-            ->call('addServico')
-            ->set('servicos.0.nome', 'Corte')
-            ->set('servicos.0.duracaoMinutos', 30)
-            ->set('servicos.0.preco', '35.00')
+            ->set('servicos', [['id' => null, 'nome' => 'Corte', 'duracaoMinutos' => 30, 'preco' => '35.00']])
             ->call('save');
 
         $this->assertDatabaseHas('agente_servicos', ['nome' => 'Corte']);
 
         $component
-            ->call('removeServico', 0)
+            ->set('servicos', [])
             ->call('save');
 
         $this->assertDatabaseMissing('agente_servicos', ['nome' => 'Corte']);
@@ -115,15 +109,13 @@ class ChatbotManagerTest extends TestCase
             ->test(ChatbotManager::class)
             ->set('nomeExibicao', 'Barbearia Delta')
             ->set('antecedenciaMinima', '2 horas')
-            ->set('novaPolitica', 'chega na hora')
-            ->call('addPolitica')
+            ->set('politicas', ['chega na hora'])
             ->call('save');
 
         $this->assertDatabaseHas('agente_dados_negocio', ['politicas' => json_encode(['chega na hora'])]);
 
         $component
-            ->call('removePolitica', 0)
-            ->assertSet('politicas', [])
+            ->set('politicas', [])
             ->call('save');
 
         $this->assertDatabaseHas('agente_dados_negocio', ['politicas' => json_encode([])]);
@@ -138,10 +130,7 @@ class ChatbotManagerTest extends TestCase
             ->test(ChatbotManager::class)
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
-            ->call('addServico')
-            ->set('servicos.0.nome', '')
-            ->set('servicos.0.duracaoMinutos', 0)
-            ->set('servicos.0.preco', -1)
+            ->set('servicos', [['id' => null, 'nome' => '', 'duracaoMinutos' => 0, 'preco' => -1]])
             ->call('save')
             ->assertHasErrors(['servicos.0.nome', 'servicos.0.duracaoMinutos', 'servicos.0.preco']);
     }

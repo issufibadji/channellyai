@@ -31,8 +31,6 @@ class ChatbotManager extends Component
 
     public array $politicas = [];
 
-    public string $novaPolitica = '';
-
     public string $contatoHumano = '';
 
     public string $mensagemEncaminhamento = '';
@@ -84,31 +82,6 @@ class ChatbotManager extends Component
             'duracaoMinutos' => $servico->duracao_minutos,
             'preco' => (string) $servico->preco,
         ])->values()->all();
-    }
-
-    public function addServico(): void
-    {
-        $this->servicos[] = ['id' => null, 'nome' => '', 'duracaoMinutos' => '', 'preco' => ''];
-    }
-
-    public function removeServico(int $index): void
-    {
-        unset($this->servicos[$index]);
-        $this->servicos = array_values($this->servicos);
-    }
-
-    public function addPolitica(): void
-    {
-        if (trim($this->novaPolitica) !== '') {
-            $this->politicas[] = $this->novaPolitica;
-            $this->novaPolitica = '';
-        }
-    }
-
-    public function removePolitica(int $index): void
-    {
-        unset($this->politicas[$index]);
-        $this->politicas = array_values($this->politicas);
     }
 
     public function save(): void

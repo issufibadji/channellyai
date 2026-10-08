@@ -42,47 +42,66 @@
             </div>
         </x-card>
 
-        <x-card>
+        <x-card x-data="{ servicos: @entangle('servicos') }">
             <h2 class="font-semibold text-text-primary mb-4">Serviços</h2>
 
             <div class="space-y-3">
-                @foreach ($servicos as $index => $servico)
-                    <div wire:key="servico-{{ $index }}" class="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-start">
+                <template x-for="(servico, index) in servicos" :key="index">
+                    <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-start">
                         <div>
-                            <input type="text" wire:model="servicos.{{ $index }}.nome" placeholder="Nome do serviço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                            @error("servicos.{$index}.nome") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                            <input type="text" x-model="servico.nome" placeholder="Nome do serviço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                         </div>
                         <div>
-                            <input type="number" min="1" wire:model="servicos.{{ $index }}.duracaoMinutos" placeholder="Minutos" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                            @error("servicos.{$index}.duracaoMinutos") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                            <input type="number" min="1" x-model="servico.duracaoMinutos" placeholder="Minutos" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                         </div>
                         <div>
-                            <input type="number" step="0.01" min="0" wire:model="servicos.{{ $index }}.preco" placeholder="Preço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                            @error("servicos.{$index}.preco") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                            <input type="number" step="0.01" min="0" x-model="servico.preco" placeholder="Preço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                         </div>
-                        <button type="button" wire:click="removeServico({{ $index }})" wire:loading.attr="disabled" class="text-danger hover:underline text-sm pt-2 disabled:opacity-50">Remover</button>
+                        <button type="button" @click="servicos.splice(index, 1)" class="text-danger hover:underline text-sm pt-2">Remover</button>
                     </div>
-                @endforeach
+                </template>
             </div>
 
-            <button type="button" wire:click="addServico" wire:loading.attr="disabled" class="mt-3 text-primary hover:underline text-sm disabled:opacity-50">+ Adicionar serviço</button>
+            <button
+                type="button"
+                @click="servicos.push({ id: null, nome: '', duracaoMinutos: '', preco: '' })"
+                class="mt-3 text-primary hover:underline text-sm"
+            >
+                + Adicionar serviço
+            </button>
+
+            @error('servicos.*.nome') <p class="mt-2 text-sm text-danger">Preencha o nome de todos os serviços.</p> @enderror
+            @error('servicos.*.duracaoMinutos') <p class="mt-2 text-sm text-danger">Preencha a duração (em minutos) de todos os serviços.</p> @enderror
+            @error('servicos.*.preco') <p class="mt-2 text-sm text-danger">Preencha o preço de todos os serviços.</p> @enderror
         </x-card>
 
-        <x-card>
+        <x-card x-data="{ politicas: @entangle('politicas'), novaPolitica: '' }">
             <h2 class="font-semibold text-text-primary mb-4">Políticas</h2>
 
             <ul class="space-y-2 mb-3">
-                @foreach ($politicas as $index => $politica)
-                    <li wire:key="politica-{{ $index }}" class="flex items-center justify-between gap-3 text-sm text-text-secondary">
-                        <span>{{ $politica }}</span>
-                        <button type="button" wire:click="removePolitica({{ $index }})" wire:loading.attr="disabled" class="text-danger hover:underline disabled:opacity-50">Remover</button>
+                <template x-for="(politica, index) in politicas" :key="index">
+                    <li class="flex items-center justify-between gap-3 text-sm text-text-secondary">
+                        <span x-text="politica"></span>
+                        <button type="button" @click="politicas.splice(index, 1)" class="text-danger hover:underline">Remover</button>
                     </li>
-                @endforeach
+                </template>
             </ul>
 
             <div class="flex gap-3">
-                <input type="text" wire:model="novaPolitica" placeholder="Nova política" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                <x-button type="button" variant="secondary" wire:click="addPolitica" wire:loading.attr="disabled">Adicionar</x-button>
+                <input
+                    type="text"
+                    x-model="novaPolitica"
+                    @keydown.enter.prevent="if (novaPolitica.trim()) { politicas.push(novaPolitica); novaPolitica = '' }"
+                    placeholder="Nova política"
+                    class="w-full rounded-md bg-surface border-surface-border text-text-primary"
+                >
+                <x-button
+                    type="button"
+                    variant="secondary"
+                    @click="if (novaPolitica.trim()) { politicas.push(novaPolitica); novaPolitica = '' }"
+                >
+                    Adicionar
+                </x-button>
             </div>
         </x-card>
 
