@@ -42,7 +42,7 @@
             </div>
         </x-card>
 
-        <x-card x-data="{ servicos: @entangle('servicos') }">
+        <x-card x-data="{ servicos: $wire.entangle('servicos') }">
             <h2 class="font-semibold text-text-primary mb-4">Serviços</h2>
 
             <div class="space-y-3">
@@ -75,7 +75,7 @@
             @error('servicos.*.preco') <p class="mt-2 text-sm text-danger">Preencha o preço de todos os serviços.</p> @enderror
         </x-card>
 
-        <x-card x-data="{ politicas: @entangle('politicas'), novaPolitica: '' }">
+        <x-card x-data="{ politicas: $wire.entangle('politicas'), novaPolitica: '' }">
             <h2 class="font-semibold text-text-primary mb-4">Políticas</h2>
 
             <ul class="space-y-2 mb-3">
