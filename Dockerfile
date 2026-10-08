@@ -4,7 +4,11 @@
 FROM node:22-alpine AS assets
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm ci falha ao resolver o binário nativo do Rolldown/Vite para linux-musl
+# quando o lockfile foi gerado noutra plataforma (bug conhecido do npm,
+# https://github.com/npm/cli/issues/4828). npm install resolve corretamente
+# no momento do build, para a plataforma real do container.
+RUN npm install
 COPY . .
 RUN npm run build
 
