@@ -7,6 +7,8 @@ use App\Models\Agente;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\Concerns\WithEstabelecimentoAtual;
 use Tests\TestCase;
@@ -178,5 +180,59 @@ class ChatbotManagerTest extends TestCase
             ->call('visualizar')
             ->assertSee('## DADOS DO NEGÓCIO')
             ->assertSee('Barbearia do Zé');
+    }
+
+    public function test_publicar_atualiza_status_para_publicado_e_mostra_sucesso(): void
+    {
+        config([
+            'nanoclaw.github_token' => 'token-de-teste',
+            'nanoclaw.github_repo' => 'issufibadji/agente-atendimento-deploy',
+            'nanoclaw.branch' => 'main',
+        ]);
+
+        Http::fake(function (Request $request) {
+            if ($request->method() === 'GET') {
+                return Http::response([], 404);
+            }
+
+            return Http::response(['commit' => ['sha' => 'abc123']], 201);
+        });
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('nomeExibicao', 'Barbearia do Zé')
+            ->set('antecedenciaMinima', '2 horas')
+            ->call('save')
+            ->call('publicar')
+            ->assertSee('Agente publicado com sucesso.');
+
+        $this->assertSame('publicado', Agente::first()->status_publicacao);
+    }
+
+    public function test_publicar_mostra_erro_quando_a_publicacao_falha(): void
+    {
+        config([
+            'nanoclaw.github_token' => 'token-de-teste',
+            'nanoclaw.github_repo' => 'issufibadji/agente-atendimento-deploy',
+            'nanoclaw.branch' => 'main',
+        ]);
+
+        Http::fake(fn () => Http::response(['message' => 'Bad credentials'], 401));
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('nomeExibicao', 'Barbearia do Zé')
+            ->set('antecedenciaMinima', '2 horas')
+            ->call('save')
+            ->call('publicar')
+            ->assertSee('Falha ao publicar o agente.');
+
+        $this->assertSame('erro', Agente::first()->status_publicacao);
     }
 }

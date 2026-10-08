@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Atendimento;
 
+use App\Contracts\PublicadorDeAgente;
 use App\Models\Agente;
 use App\Models\AgenteDadosNegocio;
 use App\Models\AgenteServico;
@@ -14,6 +15,8 @@ use Livewire\Component;
 class ChatbotManager extends Component
 {
     public Agente $agente;
+
+    public string $template = 'barbearia-base';
 
     public string $nomeExibicao = '';
 
@@ -74,6 +77,7 @@ class ChatbotManager extends Component
         $this->agente->load(['dadosNegocio', 'servicos']);
         $dados = $this->agente->dadosNegocio;
 
+        $this->template = $this->agente->template ?: 'barbearia-base';
         $this->nomeExibicao = $dados?->nome_exibicao ?? '';
         $this->tomDeVoz = $dados?->tom_de_voz ?? '';
         $this->endereco = $dados?->endereco ?? '';
@@ -98,6 +102,7 @@ class ChatbotManager extends Component
         abort_unless(auth()->user()->can('manage-chatbot'), 403);
 
         $this->validate([
+            'template' => 'required|string|max:255',
             'nomeExibicao' => 'required|string|max:255',
             'antecedenciaMinima' => 'required|string|max:255',
             'calendarId' => 'nullable|string|max:255',
@@ -105,6 +110,8 @@ class ChatbotManager extends Component
             'servicos.*.duracaoMinutos' => 'required|integer|min:1',
             'servicos.*.preco' => 'required|numeric|min:0',
         ]);
+
+        $this->agente->update(['template' => $this->template]);
 
         $this->agente->dadosNegocio()->updateOrCreate([], [
             'nome_exibicao' => $this->nomeExibicao,
@@ -167,6 +174,26 @@ class ChatbotManager extends Component
         $this->agente->setRelation('servicos', $servicos);
 
         $this->preview = $generator->gerar($this->agente);
+    }
+
+    public function publicar(PublicadorDeAgente $publicador, NegocioMarkdownGenerator $generator): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $this->agente->refresh();
+        $this->agente->load(['dadosNegocio', 'servicos']);
+
+        $markdown = $generator->gerar($this->agente);
+
+        try {
+            $publicador->publicar($this->agente, $markdown);
+
+            session()->flash('success', 'Agente publicado com sucesso.');
+        } catch (\Throwable) {
+            session()->flash('error', 'Falha ao publicar o agente. Confira a configuração e tente de novo.');
+        }
+
+        $this->agente->refresh();
     }
 
     public function render()

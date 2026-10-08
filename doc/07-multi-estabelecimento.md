@@ -53,16 +53,28 @@ A tela "IA e Chatbot" deixou de ser um motor de regras por palavra-chave (removi
 
 > **Atenção ao testar com múltiplas abas:** a tela "IA e Chatbot" é um componente Livewire de página inteira — cada aba do navegador mantém seu próprio estado do formulário desde que foi carregada. Se você editar/remover algo em uma aba e salvar, uma outra aba aberta antes dessa mudança ainda está com os dados antigos; salvar nela depois sobrescreve a alteração. Recarregue a página (F5) antes de confiar no que está vendo, ou evite manter duas abas na mesma tela de edição ao mesmo tempo.
 
-### Ponto de extensão para a publicação futura
+### Publicação do agente (NanoClaw)
 
-```php
-interface App\Contracts\PublicadorDeAgente
-{
-    public function publicar(Agente $agente, string $markdown): void;
-}
+Contrato real confirmado no repositório de deploy do NanoClaw (`agente-atendimento-deploy`, GitHub `issufibadji/agente-atendimento-deploy`): publicar um agente é criar/atualizar dois arquivos nesse repositório, na branch configurada:
+
+- `tenants/<group_folder>/negocio.md` — exatamente o markdown gerado por `NegocioMarkdownGenerator`.
+- `tenants/<group_folder>/tenant.env` — `GROUP_FOLDER=<group_folder>\nAGENT_TEMPLATE=<template>\n`, gerado por `App\Services\Agente\TenantEnvGenerator`.
+
+O push nesses arquivos dispara o GitHub Actions do próprio repositório de deploy, que faz `rsync` + restart do serviço na VPS — isso já existia e não foi alterado.
+
+**Implementação**: `App\Services\Agente\GithubPublicadorDeAgente implements PublicadorDeAgente`, usando a API REST do GitHub (`PUT /repos/{repo}/contents/{path}`) via a facade `Http` — sem precisar de git/SSH no container do ChannellyAI. Configuração em `config/nanoclaw.php` / `.env`:
+
+```
+NANOCLAW_GITHUB_TOKEN=       # Personal Access Token com permissão de escrita no repo de deploy
+NANOCLAW_GITHUB_REPO=issufibadji/agente-atendimento-deploy
+NANOCLAW_GITHUB_BRANCH=main
 ```
 
-Nenhuma implementação existe ainda. A implementação futura deve: gerar o markdown (`NegocioMarkdownGenerator`), publicá-lo na pasta `group_folder` do agente no NanoClaw (commit/push), e atualizar `status_publicacao`, `publicado_em` e `ultimo_commit` no model `Agente`.
+Em caso de sucesso, atualiza `status_publicacao=publicado`, `publicado_em` e `ultimo_commit` (sha do commit retornado pela API). Em caso de falha, marca `status_publicacao=erro` e relança a exceção (a tela mostra uma mensagem genérica).
+
+**Pré-requisito manual, fora do alcance desta integração**: o "agent group" (pasta `~/nanoclaw/groups/<group_folder>/`) precisa já existir na VPS antes da primeira publicação daquele slug — hoje só é criado à mão, via Claude Code na VPS (`./bin/ncl groups create --folder <slug> --name "..." --timezone America/Sao_Paulo`). O pipeline de deploy do NanoClaw **não cria** o agent group sozinho — só aplica a persona (`negocio.md`) a um agent group que já existe, e falha explicitamente se a pasta não existir. A tela "IA e Chatbot" mostra um lembrete desse passo antes do botão "Publicar".
+
+**Não implementado ainda**: preenchimento de `agent_group_id` (esse identificador é interno do NanoClaw/`ncl`, só existe depois que alguém roda `ncl groups create` manualmente na VPS — não há como o ChannellyAI descobri-lo sozinho hoje); leitura de conversas/canais vindos do agente de volta para o ChannellyAI (fora do escopo definido no início do trabalho).
 
 ---
 
@@ -78,13 +90,12 @@ Nenhuma implementação existe ainda. A implementação futura deve: gerar o mar
 1. Dentro do estabelecimento desejado (selecionado no topbar), acesse **IA e Chatbot**.
 2. Se for a primeira vez, o Agente já é criado automaticamente — basta preencher os dados do negócio e os serviços.
 3. Use "Pré-visualizar" para conferir o `negocio.md` antes de salvar.
-4. A publicação para o NanoClaw fica para uma etapa futura (ver `PublicadorDeAgente` acima).
+4. Depois de salvo, confirme que o agent group já existe na VPS (ver aviso na tela) e clique em "Publicar" para enviar `negocio.md`/`tenant.env` ao repositório de deploy do NanoClaw.
 
 ---
 
-## O que ficou para a etapa de publicação
+## O que ficou de fora
 
-- Implementação de `PublicadorDeAgente` (commit/push do `negocio.md` para o NanoClaw).
-- Atualização de `status_publicacao`/`publicado_em`/`ultimo_commit` a partir dessa publicação.
-- Preenchimento de `agent_group_id` quando o NanoClaw retornar esse identificador.
-- Leitura de conversas/canais vindos do agente de volta para o ChannellyAI (fora do escopo desta fase, conforme definido no início do trabalho).
+- Criação automática do agent group na VPS (`ncl groups create`) — continua manual.
+- Preenchimento de `agent_group_id` (depende do passo manual acima).
+- Leitura de conversas/canais vindos do agente de volta para o ChannellyAI (fora do escopo definido no início do trabalho).

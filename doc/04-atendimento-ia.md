@@ -119,7 +119,7 @@ A **infraestrutura do painel está implementada e testada** (models, telas, RBAC
 
 - [x] Cadastro do Agente de IA por estabelecimento (`Agente`, `AgenteDadosNegocio`, `AgenteServico`) — tela "IA e Chatbot"
 - [x] Gerador puro do `negocio.md` (`NegocioMarkdownGenerator`) com pré-visualização na tela
-- [ ] Publicação do `negocio.md` para o motor externo (NanoClaw) — ponto de extensão `PublicadorDeAgente` definido, sem implementação
+- [x] Publicação do `negocio.md`/`tenant.env` para o motor externo (NanoClaw) — via API REST do GitHub (`GithubPublicadorDeAgente`), botão "Publicar" na tela; pré-requisito manual (criação do agent group na VPS) documentado em `07-multi-estabelecimento.md`
 - [ ] Fluxo de marcação de compromissos via IA — depende de integração com sistema de agenda (fora de escopo até então)
 - [ ] Fluxo de segunda via de pagamento/boleto via IA — depende de integração com sistema financeiro (fora de escopo até então)
 - [ ] Envio de informativos e avisos via IA

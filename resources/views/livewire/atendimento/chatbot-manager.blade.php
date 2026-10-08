@@ -10,6 +10,10 @@
         <x-alert variant="success" class="mb-6">{{ session('success') }}</x-alert>
     @endif
 
+    @if (session('error'))
+        <x-alert variant="error" class="mb-6">{{ session('error') }}</x-alert>
+    @endif
+
     @if (! $editando)
         <x-card class="max-w-3xl space-y-4">
             <div class="flex items-center justify-between">
@@ -20,7 +24,28 @@
                 </div>
             </div>
 
+            <div class="flex items-center justify-between border-t border-surface-border pt-4">
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="text-text-secondary">Publicação:</span>
+                    <x-badge :variant="match ($agente->status_publicacao) {
+                        'publicado' => 'success',
+                        'erro' => 'danger',
+                        default => 'default',
+                    }">
+                        {{ \App\Models\Agente::STATUS_PUBLICACAO[$agente->status_publicacao] ?? $agente->status_publicacao }}
+                    </x-badge>
+                    @if ($agente->publicado_em)
+                        <span class="text-text-secondary">em {{ $agente->publicado_em->format('d/m/Y H:i') }}</span>
+                    @endif
+                </div>
+                <x-button type="button" variant="secondary" wire:click="publicar" wire:loading.attr="disabled">Publicar</x-button>
+            </div>
+            <p class="text-xs text-text-secondary -mt-2">
+                Antes da primeira publicação, confirme que o agent group <span class="font-mono">{{ $agente->group_folder }}</span> já foi criado na VPS (<span class="font-mono">ncl groups create</span>).
+            </p>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div><span class="text-text-secondary">Template:</span> {{ $template }}</div>
                 <div><span class="text-text-secondary">Tom de voz:</span> {{ $tomDeVoz ?: '—' }}</div>
                 <div><span class="text-text-secondary">Endereço:</span> {{ $endereco ?: '—' }}</div>
                 <div><span class="text-text-secondary">Horário:</span> {{ $horarioFuncionamento ?: '—' }}</div>
@@ -60,6 +85,11 @@
                     <label class="block text-sm font-medium mb-1 text-text-primary">Nome de exibição</label>
                     <input type="text" wire:model="nomeExibicao" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                     @error('nomeExibicao') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-primary">Template</label>
+                    <input type="text" wire:model="template" placeholder="ex.: barbearia-base" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                    @error('template') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1 text-text-primary">Tom de voz</label>
