@@ -127,9 +127,9 @@ class ChatbotManager extends Component
 
         $this->agente->servicos()->whereNotIn('id', $idsMantidos ?: [0])->delete();
 
-        $this->carregarDados();
-
         session()->flash('success', 'Dados do agente salvos com sucesso.');
+
+        $this->redirect(route('atendimento.dashboard'), navigate: false);
     }
 
     public function visualizar(NegocioMarkdownGenerator $generator): void

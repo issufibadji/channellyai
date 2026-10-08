@@ -66,7 +66,8 @@ class ChatbotManagerTest extends TestCase
             ->set('antecedenciaMinima', '2 horas')
             ->set('servicos', [['id' => null, 'nome' => 'Corte', 'duracaoMinutos' => 30, 'preco' => '35.00']])
             ->call('save')
-            ->assertHasNoErrors();
+            ->assertHasNoErrors()
+            ->assertRedirect(route('atendimento.dashboard'));
 
         $this->assertDatabaseHas('agente_dados_negocio', [
             'nome_exibicao' => 'Barbearia do Zé',
