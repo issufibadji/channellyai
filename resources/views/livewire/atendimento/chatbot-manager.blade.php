@@ -60,12 +60,12 @@
                             <input type="number" step="0.01" min="0" wire:model="servicos.{{ $index }}.preco" placeholder="Preço" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
                             @error("servicos.{$index}.preco") <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
                         </div>
-                        <button type="button" wire:click="removeServico({{ $index }})" class="text-danger hover:underline text-sm pt-2">Remover</button>
+                        <button type="button" wire:click="removeServico({{ $index }})" wire:loading.attr="disabled" class="text-danger hover:underline text-sm pt-2 disabled:opacity-50">Remover</button>
                     </div>
                 @endforeach
             </div>
 
-            <button type="button" wire:click="addServico" class="mt-3 text-primary hover:underline text-sm">+ Adicionar serviço</button>
+            <button type="button" wire:click="addServico" wire:loading.attr="disabled" class="mt-3 text-primary hover:underline text-sm disabled:opacity-50">+ Adicionar serviço</button>
         </x-card>
 
         <x-card>
@@ -75,14 +75,14 @@
                 @foreach ($politicas as $index => $politica)
                     <li wire:key="politica-{{ $index }}" class="flex items-center justify-between gap-3 text-sm text-text-secondary">
                         <span>{{ $politica }}</span>
-                        <button type="button" wire:click="removePolitica({{ $index }})" class="text-danger hover:underline">Remover</button>
+                        <button type="button" wire:click="removePolitica({{ $index }})" wire:loading.attr="disabled" class="text-danger hover:underline disabled:opacity-50">Remover</button>
                     </li>
                 @endforeach
             </ul>
 
             <div class="flex gap-3">
                 <input type="text" wire:model="novaPolitica" placeholder="Nova política" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                <x-button type="button" variant="secondary" wire:click="addPolitica">Adicionar</x-button>
+                <x-button type="button" variant="secondary" wire:click="addPolitica" wire:loading.attr="disabled">Adicionar</x-button>
             </div>
         </x-card>
 
@@ -106,9 +106,9 @@
         @endif
 
         <div class="flex items-center justify-end gap-3">
-            <span wire:loading wire:target="save" class="text-sm text-text-secondary">Salvando...</span>
-            <x-button type="button" variant="secondary" wire:click="visualizar" wire:loading.attr="disabled" wire:target="save">Pré-visualizar</x-button>
-            <x-button type="submit" wire:loading.attr="disabled" wire:target="save">Salvar</x-button>
+            <span wire:loading class="text-sm text-text-secondary">Processando...</span>
+            <x-button type="button" variant="secondary" wire:click="visualizar" wire:loading.attr="disabled">Pré-visualizar</x-button>
+            <x-button type="submit" wire:loading.attr="disabled">Salvar</x-button>
         </div>
     </form>
 
