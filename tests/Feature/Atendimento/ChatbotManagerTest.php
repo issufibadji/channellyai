@@ -235,4 +235,87 @@ class ChatbotManagerTest extends TestCase
 
         $this->assertSame('erro', Agente::first()->status_publicacao);
     }
+
+    public function test_conectar_bot_do_telegram_com_token_valido(): void
+    {
+        Http::fake([
+            'api.telegram.org/botTOKEN-VALIDO/getMe' => Http::response([
+                'ok' => true,
+                'result' => ['id' => 1, 'username' => 'barbearia_piloto_bot', 'first_name' => 'Barbearia Piloto'],
+            ]),
+            'api.telegram.org/botTOKEN-VALIDO/getMyName' => Http::response(['ok' => true, 'result' => ['name' => 'Barbearia Piloto']]),
+            'api.telegram.org/botTOKEN-VALIDO/getMyDescription' => Http::response(['ok' => true, 'result' => ['description' => '']]),
+            'api.telegram.org/botTOKEN-VALIDO/getMyShortDescription' => Http::response(['ok' => true, 'result' => ['short_description' => '']]),
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('telegramBotTokenInput', 'TOKEN-VALIDO')
+            ->call('conectarTelegramBot')
+            ->assertSee('conectado com sucesso')
+            ->assertSet('telegramPerfilCarregado', true);
+
+        $this->assertSame('barbearia_piloto_bot', Agente::first()->telegram_bot_username);
+        $this->assertNotNull(Agente::first()->telegram_bot_token);
+    }
+
+    public function test_conectar_bot_do_telegram_com_token_invalido_mostra_erro(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => false, 'description' => 'Unauthorized'], 401)]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('telegramBotTokenInput', 'TOKEN-INVALIDO')
+            ->call('conectarTelegramBot')
+            ->assertSee('Não foi possível conectar');
+
+        $this->assertNull(Agente::first()->telegram_bot_username);
+    }
+
+    public function test_atualizar_perfil_do_bot_chama_a_api_do_telegram(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)->test(ChatbotManager::class);
+        Agente::first()->update(['telegram_bot_token' => 'TOKEN-VALIDO', 'telegram_bot_username' => 'barbearia_piloto_bot']);
+
+        Http::fake([
+            'api.telegram.org/botTOKEN-VALIDO/getMyName' => Http::response(['ok' => true, 'result' => ['name' => 'Barbearia Piloto']]),
+            'api.telegram.org/botTOKEN-VALIDO/getMyDescription' => Http::response(['ok' => true, 'result' => ['description' => '']]),
+            'api.telegram.org/botTOKEN-VALIDO/getMyShortDescription' => Http::response(['ok' => true, 'result' => ['short_description' => '']]),
+            'api.telegram.org/botTOKEN-VALIDO/setMyName' => Http::response(['ok' => true, 'result' => true]),
+            'api.telegram.org/botTOKEN-VALIDO/setMyDescription' => Http::response(['ok' => true, 'result' => true]),
+            'api.telegram.org/botTOKEN-VALIDO/setMyShortDescription' => Http::response(['ok' => true, 'result' => true]),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('telegramNome', 'Novo Nome do Bot')
+            ->call('atualizarPerfilTelegram')
+            ->assertSee('Perfil do bot atualizado no Telegram.');
+    }
+
+    public function test_desconectar_bot_do_telegram_remove_o_token(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)->test(ChatbotManager::class);
+        Agente::first()->update(['telegram_bot_token' => 'TOKEN-VALIDO', 'telegram_bot_username' => 'barbearia_piloto_bot']);
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->call('desconectarTelegramBot')
+            ->assertSee('desconectado do agente');
+
+        $this->assertNull(Agente::first()->telegram_bot_username);
+        $this->assertNull(Agente::first()->telegram_bot_token);
+    }
 }

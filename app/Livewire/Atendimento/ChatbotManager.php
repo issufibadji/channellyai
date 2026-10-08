@@ -7,6 +7,7 @@ use App\Models\Agente;
 use App\Models\AgenteDadosNegocio;
 use App\Models\AgenteServico;
 use App\Services\Agente\NegocioMarkdownGenerator;
+use App\Services\Agente\TelegramBotManager;
 use App\Services\CurrentEstabelecimento;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -44,6 +45,16 @@ class ChatbotManager extends Component
 
     public bool $editando = false;
 
+    public string $telegramBotTokenInput = '';
+
+    public string $telegramNome = '';
+
+    public string $telegramDescricao = '';
+
+    public string $telegramDescricaoCurta = '';
+
+    public bool $telegramPerfilCarregado = false;
+
     public function mount(): void
     {
         $estabelecimentoId = app(CurrentEstabelecimento::class)->id();
@@ -65,6 +76,10 @@ class ChatbotManager extends Component
         $this->carregarDados();
 
         $this->editando = $this->nomeExibicao === '';
+
+        if ($this->agente->telegram_bot_token) {
+            $this->carregarPerfilTelegram(app(TelegramBotManager::class));
+        }
     }
 
     public function editar(): void
@@ -203,6 +218,80 @@ class ChatbotManager extends Component
         $this->agente->regenerarWebhookToken();
 
         session()->flash('success', 'Token do webhook regenerado. Atualize onde ele for usado.');
+    }
+
+    public function conectarTelegramBot(TelegramBotManager $manager): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $this->validate(['telegramBotTokenInput' => 'required|string']);
+
+        try {
+            $info = $manager->obterInfo($this->telegramBotTokenInput);
+
+            $this->agente->update([
+                'telegram_bot_token' => $this->telegramBotTokenInput,
+                'telegram_bot_username' => $info['username'],
+            ]);
+
+            $this->telegramBotTokenInput = '';
+            $this->carregarPerfilTelegram($manager);
+
+            session()->flash('success', "Bot @{$info['username']} conectado com sucesso.");
+        } catch (\Throwable) {
+            session()->flash('error', 'Não foi possível conectar com esse token. Confira se ele foi copiado certo do @BotFather.');
+        }
+    }
+
+    public function desconectarTelegramBot(): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $this->agente->update(['telegram_bot_token' => null, 'telegram_bot_username' => null]);
+        $this->telegramNome = '';
+        $this->telegramDescricao = '';
+        $this->telegramDescricaoCurta = '';
+        $this->telegramPerfilCarregado = false;
+
+        session()->flash('success', 'Bot do Telegram desconectado do agente.');
+    }
+
+    private function carregarPerfilTelegram(TelegramBotManager $manager): void
+    {
+        try {
+            $perfil = $manager->obterPerfil($this->agente->telegram_bot_token);
+
+            $this->telegramNome = $perfil['nome'];
+            $this->telegramDescricao = $perfil['descricao'];
+            $this->telegramDescricaoCurta = $perfil['descricao_curta'];
+            $this->telegramPerfilCarregado = true;
+        } catch (\Throwable) {
+            $this->telegramPerfilCarregado = false;
+            session()->flash('error', 'Não foi possível carregar os dados atuais do bot no Telegram.');
+        }
+    }
+
+    public function atualizarPerfilTelegram(TelegramBotManager $manager): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $this->validate([
+            'telegramNome' => 'required|string|max:64',
+            'telegramDescricao' => 'nullable|string|max:512',
+            'telegramDescricaoCurta' => 'nullable|string|max:120',
+        ]);
+
+        try {
+            $manager->atualizarPerfil($this->agente->telegram_bot_token, [
+                'nome' => $this->telegramNome,
+                'descricao' => $this->telegramDescricao,
+                'descricao_curta' => $this->telegramDescricaoCurta,
+            ]);
+
+            session()->flash('success', 'Perfil do bot atualizado no Telegram.');
+        } catch (\Throwable) {
+            session()->flash('error', 'Falha ao atualizar o perfil do bot no Telegram.');
+        }
     }
 
     public function render()
