@@ -8,17 +8,16 @@ Este documento descreve o endpoint pronto no ChannellyAI para **receber** conver
 
 ```
 POST /api/webhooks/nanoclaw
-Header: X-NanoClaw-Secret: <NANOCLAW_WEBHOOK_SECRET>
+Header: X-NanoClaw-Token: <token do agente>
 Content-Type: application/json
 ```
 
-Autenticação: um segredo compartilhado simples (`NANOCLAW_WEBHOOK_SECRET` no `.env`), comparado com `hash_equals()` no middleware `App\Http\Middleware\VerifyNanoClawWebhookSecret`. Sem o header, ou com valor errado, ou sem o segredo configurado no ChannellyAI: `401`.
+Autenticação: **um token por Agente**, gerado automaticamente na criação (`agentes.webhook_token`, coluna única), visível e regenerável na tela "IA e Chatbot" (botão "Regenerar" — regenerar invalida o token anterior imediatamente). O token identifica sozinho o agente (e, por tabela, o estabelecimento) — o payload não precisa mais informar `group_folder`. Sem o header, ou com um token que não bate com nenhum agente: `401`.
 
 ## Payload
 
 ```json
 {
-  "group_folder": "barbearia-piloto",
   "cliente": { "nome": "Marcos", "telefone": "21996466464" },
   "canal": "telegram",
   "status": "resolvido",
@@ -32,7 +31,6 @@ Autenticação: um segredo compartilhado simples (`NANOCLAW_WEBHOOK_SECRET` no `
 
 | Campo | Obrigatório | Observação |
 |---|---|---|
-| `group_folder` | sim | Precisa bater com `agentes.group_folder` de um agente já cadastrado no ChannellyAI — é assim que o estabelecimento é identificado. Sem bater: `404`. |
 | `cliente.nome` | sim | |
 | `cliente.telefone` | não | Usado para não duplicar o Cliente entre chamadas — sem telefone, cada chamada cria um Cliente novo. |
 | `canal` | sim | Precisa estar em `App\Models\Atendimento\Canal::TIPOS` (hoje: `whatsapp`, `telegram`, `instagram`, `facebook`, `site`, `email`). |
@@ -56,14 +54,13 @@ Resposta de sucesso: `201 { "atendimento_id": <int> }`.
 ## Implementação no ChannellyAI
 
 - `routes/api.php` — rota, sem sessão/CSRF (grupo `api` padrão do Laravel).
-- `App\Http\Middleware\VerifyNanoClawWebhookSecret` — autenticação por segredo.
-- `App\Http\Controllers\Api\NanoClawWebhookController` — validação do payload.
+- `App\Http\Controllers\Api\NanoClawWebhookController` — resolve o `Agente` pelo token do header (`401` se não encontrar) e valida o payload.
 - `App\Services\Atendimento\RegistrarAtendimentoExterno` — lógica de criar/reaproveitar Cliente/Canal/Atendimento, testável isoladamente (`tests/Unit/Atendimento/RegistrarAtendimentoExternoTest.php`).
+- `App\Models\Agente::$webhook_token` — gerado automaticamente na criação do agente (`Agente::gerarWebhookToken()`), regenerável via `Agente::regenerarWebhookToken()`; excluído do log de auditoria (`$auditExclude`).
 
-Importante: como não há "estabelecimento atual" de sessão numa chamada de API, o service contorna explicitamente o global scope de `App\Concerns\BelongsToEstabelecimento` (`Model::withoutGlobalScope('estabelecimento')`) e define `estabelecimento_id` manualmente a partir do `group_folder` do agente.
+Importante: como não há "estabelecimento atual" de sessão numa chamada de API, o service contorna explicitamente o global scope de `App\Concerns\BelongsToEstabelecimento` (`Model::withoutGlobalScope('estabelecimento')`) e define `estabelecimento_id` manualmente a partir do agente resolvido pelo token.
 
 ## O que falta para fechar a integração de verdade
 
-- Implementar, no motor NanoClaw (repositório externo, fora do alcance deste trabalho), o envio desse webhook ao final de cada conversa/atendimento.
-- Configurar `NANOCLAW_WEBHOOK_SECRET` tanto no ChannellyAI quanto no NanoClaw (mesmo valor).
-- Nenhum teste de integração ponta a ponta foi feito contra o motor real — só simulado via `Http`/requisições de teste neste repositório.
+- Implementar, no motor NanoClaw (repositório externo, fora do alcance deste trabalho), o envio desse webhook ao final de cada conversa/atendimento, usando o token do agente correspondente.
+- Nenhum teste de integração ponta a ponta foi feito contra o motor real — só simulado via requisições de teste neste repositório e via `curl` manual contra o servidor de desenvolvimento.

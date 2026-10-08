@@ -196,6 +196,15 @@ class ChatbotManager extends Component
         $this->agente->refresh();
     }
 
+    public function regenerarWebhookToken(): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $this->agente->regenerarWebhookToken();
+
+        session()->flash('success', 'Token do webhook regenerado. Atualize onde ele for usado.');
+    }
+
     public function render()
     {
         return view('livewire.atendimento.chatbot-manager');

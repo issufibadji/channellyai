@@ -8,7 +8,6 @@ use App\Models\Atendimento\Canal;
 use App\Models\Atendimento\Cliente;
 use App\Models\Estabelecimento;
 use App\Services\Atendimento\RegistrarAtendimentoExterno;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,7 +22,6 @@ class RegistrarAtendimentoExternoTest extends TestCase
         return Agente::create([
             'estabelecimento_id' => $estabelecimento->id,
             'nome' => 'Agente Piloto',
-            'group_folder' => 'barbearia-piloto',
             'template' => 'barbearia-base',
         ]);
     }
@@ -33,7 +31,7 @@ class RegistrarAtendimentoExternoTest extends TestCase
         $agente = $this->criarAgente();
 
         $atendimento = (new RegistrarAtendimentoExterno)->registrar(
-            groupFolder: 'barbearia-piloto',
+            agente: $agente,
             cliente: ['nome' => 'Marcos', 'telefone' => '21999999999'],
             canal: 'telegram',
             resumo: 'Resumo da conversa.',
@@ -53,13 +51,13 @@ class RegistrarAtendimentoExternoTest extends TestCase
 
     public function test_reaproveita_cliente_e_canal_em_chamadas_seguintes(): void
     {
-        $this->criarAgente();
+        $agente = $this->criarAgente();
         $service = new RegistrarAtendimentoExterno;
 
-        $service->registrar('barbearia-piloto', ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
+        $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
             ['remetente' => 'cliente', 'conteudo' => 'Oi'],
         ]);
-        $service->registrar('barbearia-piloto', ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
+        $service->registrar($agente, ['nome' => 'Marcos', 'telefone' => '21999999999'], 'telegram', null, null, [
             ['remetente' => 'cliente', 'conteudo' => 'De novo'],
         ]);
 
@@ -70,23 +68,13 @@ class RegistrarAtendimentoExternoTest extends TestCase
 
     public function test_status_default_aberto_quando_nao_informado(): void
     {
-        $this->criarAgente();
+        $agente = $this->criarAgente();
 
         $atendimento = (new RegistrarAtendimentoExterno)->registrar(
-            'barbearia-piloto', ['nome' => 'Marcos', 'telefone' => null], 'telegram', null, null,
+            $agente, ['nome' => 'Marcos', 'telefone' => null], 'telegram', null, null,
             [['remetente' => 'cliente', 'conteudo' => 'Oi']],
         );
 
         $this->assertSame('aberto', $atendimento->status);
-    }
-
-    public function test_group_folder_inexistente_lanca_model_not_found(): void
-    {
-        $this->expectException(ModelNotFoundException::class);
-
-        (new RegistrarAtendimentoExterno)->registrar(
-            'nao-existe', ['nome' => 'Marcos', 'telefone' => null], 'telegram', null, null,
-            [['remetente' => 'cliente', 'conteudo' => 'Oi']],
-        );
     }
 }

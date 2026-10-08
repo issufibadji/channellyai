@@ -21,9 +21,11 @@ class Agente extends Model implements AuditableContract
     ];
 
     protected $fillable = [
-        'estabelecimento_id', 'nome', 'template', 'group_folder',
+        'estabelecimento_id', 'nome', 'template', 'group_folder', 'webhook_token',
         'agent_group_id', 'status_publicacao', 'publicado_em', 'ultimo_commit',
     ];
+
+    protected $auditExclude = ['webhook_token'];
 
     protected function casts(): array
     {
@@ -42,7 +44,21 @@ class Agente extends Model implements AuditableContract
             if (! $agente->status_publicacao) {
                 $agente->status_publicacao = 'rascunho';
             }
+
+            if (! $agente->webhook_token) {
+                $agente->webhook_token = static::gerarWebhookToken();
+            }
         });
+    }
+
+    public static function gerarWebhookToken(): string
+    {
+        return Str::random(40);
+    }
+
+    public function regenerarWebhookToken(): void
+    {
+        $this->update(['webhook_token' => static::gerarWebhookToken()]);
     }
 
     public function estabelecimento(): BelongsTo

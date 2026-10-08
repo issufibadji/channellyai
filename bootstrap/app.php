@@ -17,7 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'check2fa' => \App\Http\Middleware\CheckTwoFactor::class,
             'checkPermission' => \App\Http\Middleware\CheckPermission::class,
             'setEstabelecimento' => \App\Http\Middleware\SetCurrentEstabelecimento::class,
-            'nanoclaw.webhook' => \App\Http\Middleware\VerifyNanoClawWebhookSecret::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

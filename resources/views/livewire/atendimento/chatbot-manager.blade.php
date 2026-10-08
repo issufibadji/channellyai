@@ -44,6 +44,19 @@
                 Antes da primeira publicação, confirme que o agent group <span class="font-mono">{{ $agente->group_folder }}</span> já foi criado na VPS (<span class="font-mono">ncl groups create</span>).
             </p>
 
+            <div class="border-t border-surface-border pt-4 space-y-2">
+                <h3 class="text-sm font-medium text-text-primary">Integração (webhook do NanoClaw)</h3>
+                <p class="text-xs text-text-secondary">
+                    Endpoint: <span class="font-mono">POST /api/webhooks/nanoclaw</span>, header <span class="font-mono">X-NanoClaw-Token</span> com o valor abaixo. Esse token identifica este agente — não compartilhe fora do que vai consumir o webhook.
+                </p>
+                <div class="flex items-center gap-3">
+                    <code class="flex-1 text-xs bg-surface border border-surface-border rounded-md px-3 py-2 text-text-secondary break-all">{{ $agente->webhook_token }}</code>
+                    <x-button type="button" variant="secondary" wire:click="regenerarWebhookToken" wire:confirm="Regenerar o token? Qualquer integração usando o valor atual vai parar de funcionar." wire:loading.attr="disabled">
+                        Regenerar
+                    </x-button>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span class="text-text-secondary">Template:</span> {{ $template }}</div>
                 <div><span class="text-text-secondary">Tom de voz:</span> {{ $tomDeVoz ?: '—' }}</div>

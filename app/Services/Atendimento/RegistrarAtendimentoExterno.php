@@ -14,14 +14,13 @@ class RegistrarAtendimentoExterno
      * @param  array<int, array{remetente: string, conteudo: string}>  $mensagens
      */
     public function registrar(
-        string $groupFolder,
+        Agente $agente,
         array $cliente,
         string $canal,
         ?string $resumo,
         ?string $status,
         array $mensagens,
     ): Atendimento {
-        $agente = Agente::where('group_folder', $groupFolder)->firstOrFail();
         $estabelecimentoId = $agente->estabelecimento_id;
 
         $canalModel = Canal::withoutGlobalScope('estabelecimento')
