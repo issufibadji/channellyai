@@ -112,7 +112,8 @@ A **infraestrutura do painel está implementada e testada** (models, telas, RBAC
 - [ ] Integração com Facebook — **pendente**
 - [ ] Widget de chat para o site — **pendente**
 - [ ] Integração com E-mail (recebimento e resposta) — **pendente**
-- [x] Normalização de mensagens em uma entidade única de Atendimento — implementada internamente (`atendimentos` + `atendimento_mensagens`); hoje a única forma de entrada é a tela de Atendimento (inserção manual), não webhooks reais dos canais acima; campo `origem` (`manual`/`agente`) e `resumo` preparam a tela para receber encaminhamentos do agente no futuro
+- [x] Normalização de mensagens em uma entidade única de Atendimento — implementada internamente (`atendimentos` + `atendimento_mensagens`); entrada manual pela tela de Atendimento, **ou** via webhook do agente (`POST /api/webhooks/nanoclaw`, ver `08-webhook-nanoclaw.md`), que já grava com `origem = 'agente'`
+- [x] Webhook de entrada para receber conversas do NanoClaw (Telegram e demais canais do agente) — lado do ChannellyAI pronto e testado; **falta implementar o envio no motor NanoClaw** (repositório externo `nanocoai/nanoclaw`, fora do alcance deste trabalho)
 - [x] Cadastro de Canais (tela CRUD) — tipo, nome, ativo/inativo, isolado por estabelecimento; a `configuracao` (JSON) existe no schema para credenciais de API, mas nenhuma integração a lê ainda
 
 ### IA & Chatbot
