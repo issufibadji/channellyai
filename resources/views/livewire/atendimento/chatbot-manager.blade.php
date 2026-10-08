@@ -6,6 +6,53 @@
         Dados do negócio usados pelo agente de IA deste estabelecimento. Pasta de publicação: <span class="font-mono">{{ $agente->group_folder }}</span>.
     </p>
 
+    @if (session('success'))
+        <x-alert variant="success" class="mb-6">{{ session('success') }}</x-alert>
+    @endif
+
+    @if (! $editando)
+        <x-card class="max-w-3xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-text-primary">{{ $nomeExibicao }}</h2>
+                <div class="flex gap-3">
+                    <x-button type="button" variant="secondary" wire:click="visualizar">Pré-visualizar</x-button>
+                    <x-button type="button" wire:click="editar">Editar</x-button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div><span class="text-text-secondary">Tom de voz:</span> {{ $tomDeVoz ?: '—' }}</div>
+                <div><span class="text-text-secondary">Endereço:</span> {{ $endereco ?: '—' }}</div>
+                <div><span class="text-text-secondary">Horário:</span> {{ $horarioFuncionamento ?: '—' }}</div>
+                <div><span class="text-text-secondary">Antecedência mínima:</span> {{ $antecedenciaMinima ?: '—' }}</div>
+                <div class="sm:col-span-2"><span class="text-text-secondary">Google Calendar:</span> {{ $calendarId ?: '—' }}</div>
+                <div class="sm:col-span-2"><span class="text-text-secondary">Profissionais:</span> {{ $profissionais ?: '—' }}</div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-medium text-text-primary mb-2">Serviços</h3>
+                @forelse ($servicos as $servico)
+                    <div class="text-sm text-text-secondary">{{ $servico['nome'] }} — {{ $servico['duracaoMinutos'] }} min — R$ {{ number_format((float) $servico['preco'], 2, ',', '.') }}</div>
+                @empty
+                    <p class="text-sm text-text-secondary">Nenhum serviço cadastrado.</p>
+                @endforelse
+            </div>
+
+            <div>
+                <h3 class="text-sm font-medium text-text-primary mb-2">Políticas</h3>
+                @forelse ($politicas as $politica)
+                    <div class="text-sm text-text-secondary">{{ $politica }}</div>
+                @empty
+                    <p class="text-sm text-text-secondary">Nenhuma política cadastrada.</p>
+                @endforelse
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div><span class="text-text-secondary">Contato humano:</span> {{ $contatoHumano ?: '—' }}</div>
+                <div><span class="text-text-secondary">Mensagem de encaminhamento:</span> {{ $mensagemEncaminhamento ?: '—' }}</div>
+            </div>
+        </x-card>
+    @else
     <form wire:submit="save" class="space-y-6 max-w-3xl">
         <x-card>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -120,16 +167,13 @@
             </div>
         </x-card>
 
-        @if (session('success'))
-            <x-alert variant="success">{{ session('success') }}</x-alert>
-        @endif
-
         <div class="flex items-center justify-end gap-3">
             <span wire:loading class="text-sm text-text-secondary">Processando...</span>
             <x-button type="button" variant="secondary" wire:click="visualizar" wire:loading.attr="disabled">Pré-visualizar</x-button>
             <x-button type="submit" wire:loading.attr="disabled">Salvar</x-button>
         </div>
     </form>
+    @endif
 
     @if ($preview)
         <x-card class="max-w-3xl mt-6">

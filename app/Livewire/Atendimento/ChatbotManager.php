@@ -39,6 +39,8 @@ class ChatbotManager extends Component
 
     public ?string $preview = null;
 
+    public bool $editando = false;
+
     public function mount(): void
     {
         $estabelecimentoId = app(CurrentEstabelecimento::class)->id();
@@ -58,6 +60,13 @@ class ChatbotManager extends Component
         );
 
         $this->carregarDados();
+
+        $this->editando = $this->nomeExibicao === '';
+    }
+
+    public function editar(): void
+    {
+        $this->editando = true;
     }
 
     private function carregarDados(): void

@@ -54,6 +54,36 @@ class ChatbotManagerTest extends TestCase
         $this->assertSame(1, Agente::count());
     }
 
+    public function test_screen_starts_in_edit_mode_when_theres_no_data_yet(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->assertSet('editando', true);
+    }
+
+    public function test_screen_starts_in_view_mode_when_data_already_exists_and_editar_opens_the_form(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('nomeExibicao', 'Barbearia do Zé')
+            ->set('antecedenciaMinima', '2 horas')
+            ->call('save');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->assertSet('editando', false)
+            ->assertSee('Barbearia do Zé')
+            ->assertDontSee('wire:submit')
+            ->call('editar')
+            ->assertSet('editando', true);
+    }
+
     public function test_admin_can_save_business_data_and_servicos(): void
     {
         $admin = User::factory()->create();
