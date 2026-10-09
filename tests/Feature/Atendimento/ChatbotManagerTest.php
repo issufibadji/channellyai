@@ -346,4 +346,81 @@ class ChatbotManagerTest extends TestCase
 
         $this->assertNull(Canal::where('tipo', 'telegram')->first()->configuracao);
     }
+
+    private function conectarCanalDeTeste(): void
+    {
+        Canal::create([
+            'nome' => 'Telegram (agente)',
+            'tipo' => 'telegram',
+            'ativo' => true,
+            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
+        ]);
+    }
+
+    public function test_iniciar_provisionamento_cria_grupo_grava_token_e_inicia_pareamento(): void
+    {
+        config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->set('nomeExibicao', 'Barbearia do Zé')
+            ->set('antecedenciaMinima', '2 horas')
+            ->call('save');
+        $this->conectarCanalDeTeste();
+
+        Http::fake(function (Request $request) {
+            if (str_contains($request->url(), '/agent-groups') && ! str_contains($request->url(), 'telegram-token') && ! str_contains($request->url(), 'pair')) {
+                return Http::response(['ok' => true, 'output' => json_encode(['id' => 'ag-123'])]);
+            }
+            if (str_contains($request->url(), 'telegram-token')) {
+                return Http::response(['ok' => true, 'key' => 'TELEGRAM_BOT_TOKEN', 'escrito' => true]);
+            }
+            if (str_contains($request->url(), '/pair')) {
+                return Http::response(['ok' => true, 'pairing_id' => 'pairing-abc', 'code' => '969975']);
+            }
+
+            return Http::response(['ok' => false], 404);
+        });
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->call('selecionarCanal', 'telegram')
+            ->call('iniciarProvisionamento')
+            ->assertSee('969975');
+
+        $agente = Agente::first();
+        $this->assertSame('ag-123', $agente->agent_group_id);
+        $this->assertSame('pairing-abc', $agente->pareamento_pairing_id);
+        $this->assertSame('969975', $agente->pareamento_codigo);
+        $this->assertSame('pending', $agente->pareamento_status);
+    }
+
+    public function test_verificar_pareamento_marca_sucesso(): void
+    {
+        config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)->test(ChatbotManager::class);
+        Agente::first()->update([
+            'pareamento_pairing_id' => 'pairing-abc',
+            'pareamento_status' => 'pending',
+            'pareamento_codigo' => '969975',
+        ]);
+
+        Http::fake(['*' => Http::response(['ok' => true, 'status' => 'success', 'code' => '969975', 'fields' => []])]);
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->call('verificarPareamento')
+            ->assertSee('Agente pareado com o NanoClaw');
+
+        $agente = Agente::first();
+        $this->assertSame('success', $agente->pareamento_status);
+        $this->assertNotNull($agente->pareado_em);
+    }
 }

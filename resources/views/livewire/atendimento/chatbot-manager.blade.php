@@ -124,6 +124,30 @@
                                         @else
                                             <p class="text-xs text-danger">Não foi possível carregar os dados atuais do bot. Tente recarregar a página.</p>
                                         @endif
+
+                                        @if ($tipo === 'telegram')
+                                            <div class="border-t border-surface-border pt-3 space-y-3">
+                                                <h4 class="text-sm font-medium text-text-primary">Conexão com o NanoClaw</h4>
+
+                                                @if ($agente->pareamento_status === 'success')
+                                                    <x-badge variant="success">Pareado — agente já responde no Telegram</x-badge>
+                                                @elseif ($agente->pareamento_status === 'pending' && $agente->pareamento_codigo)
+                                                    <div wire:poll.3s="verificarPareamento" class="space-y-2">
+                                                        <p class="text-xs text-text-secondary">
+                                                            Abra a conversa com o bot <span class="font-mono">{{ $status['identificador'] }}</span> no Telegram e mande este código:
+                                                        </p>
+                                                        <p class="text-2xl font-mono tracking-widest text-center bg-surface border border-surface-border rounded-md py-3">{{ $agente->pareamento_codigo }}</p>
+                                                        <p class="text-xs text-text-secondary">Aguardando confirmação...</p>
+                                                    </div>
+                                                @elseif ($agente->pareamento_status === 'failed')
+                                                    <x-alert variant="error">Pareamento falhou. Tenta de novo.</x-alert>
+                                                    <x-button type="button" wire:click="iniciarProvisionamento" wire:loading.attr="disabled">Tentar de novo</x-button>
+                                                @else
+                                                    <p class="text-xs text-text-secondary">Cria o agent group na VPS, grava o token e inicia o pareamento — você só precisa confirmar com um código pelo Telegram.</p>
+                                                    <x-button type="button" wire:click="iniciarProvisionamento" wire:loading.attr="disabled">Conectar ao NanoClaw</x-button>
+                                                @endif
+                                            </div>
+                                        @endif
                                     @endif
                                 </div>
                             @endif

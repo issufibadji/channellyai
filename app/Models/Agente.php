@@ -23,6 +23,7 @@ class Agente extends Model implements AuditableContract
     protected $fillable = [
         'estabelecimento_id', 'nome', 'template', 'group_folder', 'webhook_token',
         'agent_group_id', 'status_publicacao', 'publicado_em', 'ultimo_commit',
+        'pareamento_pairing_id', 'pareamento_status', 'pareamento_codigo', 'pareado_em',
     ];
 
     protected $auditExclude = ['webhook_token'];
@@ -31,6 +32,7 @@ class Agente extends Model implements AuditableContract
     {
         return [
             'publicado_em' => 'datetime',
+            'pareado_em' => 'datetime',
         ];
     }
 

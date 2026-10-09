@@ -8,6 +8,7 @@ use App\Models\AgenteDadosNegocio;
 use App\Models\AgenteServico;
 use App\Models\Atendimento\Canal;
 use App\Services\Agente\CanalConexaoProviderFactory;
+use App\Services\Agente\NanoClawProvisionador;
 use App\Services\Agente\NegocioMarkdownGenerator;
 use App\Services\CurrentEstabelecimento;
 use Livewire\Attributes\Layout;
@@ -352,6 +353,59 @@ class ChatbotManager extends Component
             session()->flash('success', 'Perfil do canal atualizado.');
         } catch (\Throwable) {
             session()->flash('error', 'Falha ao atualizar o perfil do canal.');
+        }
+    }
+
+    public function iniciarProvisionamento(NanoClawProvisionador $provisionador): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $tipo = $this->canalAberto;
+        $canal = $tipo ? Canal::where('tipo', $tipo)->first() : null;
+
+        abort_if($tipo !== 'telegram' || ! $canal?->configuracao, 404);
+
+        try {
+            $grupo = $provisionador->criarAgentGroup($this->agente->group_folder, $this->nomeExibicao ?: $this->agente->nome);
+
+            $provisionador->gravarToken($this->agente->group_folder, (string) $canal->configuracao['token']);
+
+            $pareamento = $provisionador->iniciarPareamento($this->agente->group_folder);
+
+            $this->agente->update([
+                'agent_group_id' => $grupo['id'] ?? $this->agente->agent_group_id,
+                'pareamento_pairing_id' => $pareamento['pairing_id'],
+                'pareamento_codigo' => $pareamento['codigo'],
+                'pareamento_status' => 'pending',
+                'pareado_em' => null,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Falha ao provisionar agente no NanoClaw', ['erro' => $e->getMessage()]);
+            session()->flash('error', 'Falha ao provisionar o agente na VPS. Confira a configuração do control server.');
+        }
+    }
+
+    public function verificarPareamento(NanoClawProvisionador $provisionador): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        if (! $this->agente->pareamento_pairing_id) {
+            return;
+        }
+
+        try {
+            $status = $provisionador->statusPareamento($this->agente->pareamento_pairing_id);
+
+            $this->agente->update([
+                'pareamento_status' => $status['status'],
+                'pareado_em' => $status['status'] === 'success' ? now() : null,
+            ]);
+
+            if ($status['status'] === 'success') {
+                session()->flash('success', 'Agente pareado com o NanoClaw — já pode responder no Telegram.');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Falha ao consultar status do pareamento', ['erro' => $e->getMessage()]);
         }
     }
 
