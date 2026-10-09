@@ -58,48 +58,78 @@
             </div>
 
             <div class="border-t border-surface-border pt-4 space-y-3">
-                <h3 class="text-sm font-medium text-text-primary">Bot do Telegram</h3>
+                <h3 class="text-sm font-medium text-text-primary">Canais conectados</h3>
+                <p class="text-xs text-text-secondary">Conecte o agente aos canais onde ele vai atender. Hoje só o Telegram tem conexão pronta — os outros chegam aqui conforme forem implementados.</p>
 
-                @if (! $agente->telegram_bot_username)
-                    <p class="text-xs text-text-secondary">
-                        Cole aqui o token que o <span class="font-mono">@BotFather</span> te deu ao criar o bot (comando <span class="font-mono">/newbot</span>). O token fica guardado de forma criptografada.
-                    </p>
-                    <div class="flex items-center gap-3">
-                        <input type="password" wire:model="telegramBotTokenInput" placeholder="123456789:AAExemploDeTokenDoBotFather" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                        <x-button type="button" wire:click="conectarTelegramBot" wire:loading.attr="disabled">Conectar</x-button>
-                    </div>
-                    @error('telegramBotTokenInput') <p class="text-sm text-danger">{{ $message }}</p> @enderror
-                @else
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-text-secondary">Bot conectado: <span class="font-mono text-text-primary">@{{ $agente->telegram_bot_username }}</span></span>
-                        <x-button type="button" variant="secondary" wire:click="desconectarTelegramBot" wire:confirm="Desconectar este bot do agente? Você pode reconectar colando o token de novo depois." wire:loading.attr="disabled">
-                            Desconectar
-                        </x-button>
-                    </div>
+                <div class="space-y-2">
+                    @foreach (\App\Models\Atendimento\Canal::TIPOS as $tipo => $label)
+                        @php($suportado = in_array($tipo, \App\Models\Atendimento\Canal::TIPOS_COM_PROVIDER, true))
+                        @php($status = $canaisStatus[$tipo] ?? ['conectado' => false, 'identificador' => null])
+                        <div class="rounded-lg border border-surface-border">
+                            <div class="flex items-center justify-between px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm text-text-primary">{{ $label }}</span>
+                                    @if (! $suportado)
+                                        <x-badge variant="default">Em breve</x-badge>
+                                    @elseif ($status['conectado'])
+                                        <x-badge variant="success">Conectado — {{ $status['identificador'] }}</x-badge>
+                                    @else
+                                        <x-badge variant="default">Não conectado</x-badge>
+                                    @endif
+                                </div>
+                                @if ($suportado)
+                                    <x-button type="button" variant="secondary" wire:click="selecionarCanal('{{ $tipo }}')">
+                                        {{ $canalAberto === $tipo ? 'Fechar' : ($status['conectado'] ? 'Gerenciar' : 'Conectar') }}
+                                    </x-button>
+                                @endif
+                            </div>
 
-                    @if ($telegramPerfilCarregado)
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium mb-1 text-text-primary">Nome do bot</label>
-                                <input type="text" wire:model="telegramNome" maxlength="64" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                                @error('telegramNome') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1 text-text-primary">Descrição (aparece antes do /start)</label>
-                                <textarea wire:model="telegramDescricao" maxlength="512" rows="2" class="w-full rounded-md bg-surface border-surface-border text-text-primary"></textarea>
-                                @error('telegramDescricao') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1 text-text-primary">Descrição curta (perfil do bot)</label>
-                                <input type="text" wire:model="telegramDescricaoCurta" maxlength="120" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
-                                @error('telegramDescricaoCurta') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
-                            </div>
-                            <x-button type="button" wire:click="atualizarPerfilTelegram" wire:loading.attr="disabled">Atualizar no Telegram</x-button>
+                            @if ($canalAberto === $tipo)
+                                <div class="border-t border-surface-border px-4 py-3 space-y-3">
+                                    @if (! $status['conectado'])
+                                        <p class="text-xs text-text-secondary">
+                                            Cole aqui o token que o <span class="font-mono">@BotFather</span> te deu ao criar o bot (comando <span class="font-mono">/newbot</span>). Fica guardado de forma criptografada.
+                                        </p>
+                                        <div class="flex items-center gap-3">
+                                            <input type="password" wire:model="canalCredencialInput" placeholder="123456789:AAExemploDeTokenDoBotFather" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                                            <x-button type="button" wire:click="conectarCanal" wire:loading.attr="disabled">Conectar</x-button>
+                                        </div>
+                                        @error('canalCredencialInput') <p class="text-sm text-danger">{{ $message }}</p> @enderror
+                                    @else
+                                        <div class="flex justify-end">
+                                            <x-button type="button" variant="secondary" wire:click="desconectarCanal" wire:confirm="Desconectar este canal do agente? Você pode reconectar colando a credencial de novo depois." wire:loading.attr="disabled">
+                                                Desconectar
+                                            </x-button>
+                                        </div>
+
+                                        @if ($canalPerfilCarregado)
+                                            <div class="space-y-3">
+                                                <div>
+                                                    <label class="block text-sm font-medium mb-1 text-text-primary">Nome do bot</label>
+                                                    <input type="text" wire:model="canalNome" maxlength="64" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                                                    @error('canalNome') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium mb-1 text-text-primary">Descrição (aparece antes do /start)</label>
+                                                    <textarea wire:model="canalDescricao" maxlength="512" rows="2" class="w-full rounded-md bg-surface border-surface-border text-text-primary"></textarea>
+                                                    @error('canalDescricao') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium mb-1 text-text-primary">Descrição curta (perfil do bot)</label>
+                                                    <input type="text" wire:model="canalDescricaoCurta" maxlength="120" class="w-full rounded-md bg-surface border-surface-border text-text-primary">
+                                                    @error('canalDescricaoCurta') <p class="mt-1 text-sm text-danger">{{ $message }}</p> @enderror
+                                                </div>
+                                                <x-button type="button" wire:click="atualizarPerfilCanal" wire:loading.attr="disabled">Atualizar no Telegram</x-button>
+                                            </div>
+                                        @else
+                                            <p class="text-xs text-danger">Não foi possível carregar os dados atuais do bot. Tente recarregar a página.</p>
+                                        @endif
+                                    @endif
+                                </div>
+                            @endif
                         </div>
-                    @else
-                        <p class="text-xs text-danger">Não foi possível carregar os dados atuais do bot. Tente recarregar a página.</p>
-                    @endif
-                @endif
+                    @endforeach
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">

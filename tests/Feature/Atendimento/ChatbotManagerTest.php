@@ -4,6 +4,7 @@ namespace Tests\Feature\Atendimento;
 
 use App\Livewire\Atendimento\ChatbotManager;
 use App\Models\Agente;
+use App\Models\Atendimento\Canal;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -236,7 +237,7 @@ class ChatbotManagerTest extends TestCase
         $this->assertSame('erro', Agente::first()->status_publicacao);
     }
 
-    public function test_conectar_bot_do_telegram_com_token_valido(): void
+    public function test_conectar_canal_telegram_com_token_valido(): void
     {
         Http::fake([
             'api.telegram.org/botTOKEN-VALIDO/getMe' => Http::response([
@@ -253,16 +254,19 @@ class ChatbotManagerTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(ChatbotManager::class)
-            ->set('telegramBotTokenInput', 'TOKEN-VALIDO')
-            ->call('conectarTelegramBot')
+            ->call('selecionarCanal', 'telegram')
+            ->set('canalCredencialInput', 'TOKEN-VALIDO')
+            ->call('conectarCanal')
             ->assertSee('conectado com sucesso')
-            ->assertSet('telegramPerfilCarregado', true);
+            ->assertSet('canalPerfilCarregado', true);
 
-        $this->assertSame('barbearia_piloto_bot', Agente::first()->telegram_bot_username);
-        $this->assertNotNull(Agente::first()->telegram_bot_token);
+        $this->assertSame(
+            ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
+            Canal::where('tipo', 'telegram')->first()->configuracao,
+        );
     }
 
-    public function test_conectar_bot_do_telegram_com_token_invalido_mostra_erro(): void
+    public function test_conectar_canal_telegram_com_token_invalido_mostra_erro(): void
     {
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => false, 'description' => 'Unauthorized'], 401)]);
 
@@ -271,20 +275,38 @@ class ChatbotManagerTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(ChatbotManager::class)
-            ->set('telegramBotTokenInput', 'TOKEN-INVALIDO')
-            ->call('conectarTelegramBot')
+            ->call('selecionarCanal', 'telegram')
+            ->set('canalCredencialInput', 'TOKEN-INVALIDO')
+            ->call('conectarCanal')
             ->assertSee('Não foi possível conectar');
 
-        $this->assertNull(Agente::first()->telegram_bot_username);
+        $this->assertNull(Canal::where('tipo', 'telegram')->first());
     }
 
-    public function test_atualizar_perfil_do_bot_chama_a_api_do_telegram(): void
+    public function test_canal_ainda_nao_suportado_nao_pode_ser_conectado(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->call('selecionarCanal', 'whatsapp')
+            ->call('conectarCanal')
+            ->assertStatus(404);
+    }
+
+    public function test_atualizar_perfil_do_canal_chama_a_api_do_telegram(): void
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)->test(ChatbotManager::class);
-        Agente::first()->update(['telegram_bot_token' => 'TOKEN-VALIDO', 'telegram_bot_username' => 'barbearia_piloto_bot']);
+        Canal::create([
+            'nome' => 'Telegram (agente)',
+            'tipo' => 'telegram',
+            'ativo' => true,
+            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
+        ]);
 
         Http::fake([
             'api.telegram.org/botTOKEN-VALIDO/getMyName' => Http::response(['ok' => true, 'result' => ['name' => 'Barbearia Piloto']]),
@@ -297,25 +319,31 @@ class ChatbotManagerTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(ChatbotManager::class)
-            ->set('telegramNome', 'Novo Nome do Bot')
-            ->call('atualizarPerfilTelegram')
-            ->assertSee('Perfil do bot atualizado no Telegram.');
+            ->call('selecionarCanal', 'telegram')
+            ->set('canalNome', 'Novo Nome do Bot')
+            ->call('atualizarPerfilCanal')
+            ->assertSee('Perfil do canal atualizado.');
     }
 
-    public function test_desconectar_bot_do_telegram_remove_o_token(): void
+    public function test_desconectar_canal_remove_a_configuracao(): void
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)->test(ChatbotManager::class);
-        Agente::first()->update(['telegram_bot_token' => 'TOKEN-VALIDO', 'telegram_bot_username' => 'barbearia_piloto_bot']);
+        Canal::create([
+            'nome' => 'Telegram (agente)',
+            'tipo' => 'telegram',
+            'ativo' => true,
+            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
+        ]);
 
         Livewire::actingAs($admin)
             ->test(ChatbotManager::class)
-            ->call('desconectarTelegramBot')
-            ->assertSee('desconectado do agente');
+            ->call('selecionarCanal', 'telegram')
+            ->call('desconectarCanal')
+            ->assertSee('Canal desconectado do agente.');
 
-        $this->assertNull(Agente::first()->telegram_bot_username);
-        $this->assertNull(Agente::first()->telegram_bot_token);
+        $this->assertNull(Canal::where('tipo', 'telegram')->first()->configuracao);
     }
 }

@@ -6,8 +6,9 @@ use App\Contracts\PublicadorDeAgente;
 use App\Models\Agente;
 use App\Models\AgenteDadosNegocio;
 use App\Models\AgenteServico;
+use App\Models\Atendimento\Canal;
+use App\Services\Agente\CanalConexaoProviderFactory;
 use App\Services\Agente\NegocioMarkdownGenerator;
-use App\Services\Agente\TelegramBotManager;
 use App\Services\CurrentEstabelecimento;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -45,15 +46,20 @@ class ChatbotManager extends Component
 
     public bool $editando = false;
 
-    public string $telegramBotTokenInput = '';
+    /** @var array<string, array{conectado: bool, identificador: ?string}> */
+    public array $canaisStatus = [];
 
-    public string $telegramNome = '';
+    public ?string $canalAberto = null;
 
-    public string $telegramDescricao = '';
+    public string $canalCredencialInput = '';
 
-    public string $telegramDescricaoCurta = '';
+    public string $canalNome = '';
 
-    public bool $telegramPerfilCarregado = false;
+    public string $canalDescricao = '';
+
+    public string $canalDescricaoCurta = '';
+
+    public bool $canalPerfilCarregado = false;
 
     public function mount(): void
     {
@@ -77,9 +83,7 @@ class ChatbotManager extends Component
 
         $this->editando = $this->nomeExibicao === '';
 
-        if ($this->agente->telegram_bot_token) {
-            $this->carregarPerfilTelegram(app(TelegramBotManager::class));
-        }
+        $this->atualizarStatusCanais();
     }
 
     public function editar(): void
@@ -220,77 +224,133 @@ class ChatbotManager extends Component
         session()->flash('success', 'Token do webhook regenerado. Atualize onde ele for usado.');
     }
 
-    public function conectarTelegramBot(TelegramBotManager $manager): void
+    private function atualizarStatusCanais(): void
+    {
+        $canais = Canal::whereIn('tipo', Canal::TIPOS_COM_PROVIDER)->get()->keyBy('tipo');
+
+        $this->canaisStatus = [];
+
+        foreach (Canal::TIPOS_COM_PROVIDER as $tipo) {
+            $canal = $canais->get($tipo);
+            $identificador = $canal?->configuracao['identificador'] ?? null;
+
+            $this->canaisStatus[$tipo] = [
+                'conectado' => $identificador !== null,
+                'identificador' => $identificador,
+            ];
+        }
+    }
+
+    public function selecionarCanal(string $tipo): void
     {
         abort_unless(auth()->user()->can('manage-chatbot'), 403);
 
-        $this->validate(['telegramBotTokenInput' => 'required|string']);
+        $this->canalAberto = $this->canalAberto === $tipo ? null : $tipo;
+        $this->canalCredencialInput = '';
+        $this->canalPerfilCarregado = false;
+        $this->resetErrorBag();
+
+        if ($this->canalAberto && ($this->canaisStatus[$this->canalAberto]['conectado'] ?? false)) {
+            $this->carregarPerfilCanal($this->canalAberto);
+        }
+    }
+
+    public function conectarCanal(CanalConexaoProviderFactory $factory): void
+    {
+        abort_unless(auth()->user()->can('manage-chatbot'), 403);
+
+        $tipo = $this->canalAberto;
+        $provider = $tipo ? $factory->para($tipo) : null;
+        abort_if(! $tipo || ! $provider, 404);
+
+        $this->validate(['canalCredencialInput' => 'required|string']);
 
         try {
-            $info = $manager->obterInfo($this->telegramBotTokenInput);
+            $resultado = $provider->conectar(['token' => $this->canalCredencialInput]);
 
-            $this->agente->update([
-                'telegram_bot_token' => $this->telegramBotTokenInput,
-                'telegram_bot_username' => $info['username'],
+            $canal = Canal::firstOrCreate(
+                ['tipo' => $tipo],
+                ['nome' => (Canal::TIPOS[$tipo] ?? $tipo).' (agente)', 'ativo' => true],
+            );
+
+            $canal->update([
+                'configuracao' => $resultado['configuracao'] + ['identificador' => $resultado['identificador']],
             ]);
 
-            $this->telegramBotTokenInput = '';
-            $this->carregarPerfilTelegram($manager);
+            $this->canalCredencialInput = '';
+            $this->atualizarStatusCanais();
+            $this->carregarPerfilCanal($tipo);
 
-            session()->flash('success', "Bot @{$info['username']} conectado com sucesso.");
+            session()->flash('success', "{$resultado['identificador']} conectado com sucesso.");
         } catch (\Throwable) {
-            session()->flash('error', 'Não foi possível conectar com esse token. Confira se ele foi copiado certo do @BotFather.');
+            session()->flash('error', 'Não foi possível conectar com essa credencial. Confira se foi copiada certo.');
         }
     }
 
-    public function desconectarTelegramBot(): void
+    public function desconectarCanal(): void
     {
         abort_unless(auth()->user()->can('manage-chatbot'), 403);
 
-        $this->agente->update(['telegram_bot_token' => null, 'telegram_bot_username' => null]);
-        $this->telegramNome = '';
-        $this->telegramDescricao = '';
-        $this->telegramDescricaoCurta = '';
-        $this->telegramPerfilCarregado = false;
+        $tipo = $this->canalAberto;
 
-        session()->flash('success', 'Bot do Telegram desconectado do agente.');
+        Canal::where('tipo', $tipo)->first()?->update(['configuracao' => null]);
+
+        $this->canalPerfilCarregado = false;
+        $this->atualizarStatusCanais();
+
+        session()->flash('success', 'Canal desconectado do agente.');
     }
 
-    private function carregarPerfilTelegram(TelegramBotManager $manager): void
+    private function carregarPerfilCanal(string $tipo): void
     {
-        try {
-            $perfil = $manager->obterPerfil($this->agente->telegram_bot_token);
+        $provider = app(CanalConexaoProviderFactory::class)->para($tipo);
+        $canal = Canal::where('tipo', $tipo)->first();
 
-            $this->telegramNome = $perfil['nome'];
-            $this->telegramDescricao = $perfil['descricao'];
-            $this->telegramDescricaoCurta = $perfil['descricao_curta'];
-            $this->telegramPerfilCarregado = true;
+        if (! $provider || ! $provider->suportaPerfil() || ! $canal?->configuracao) {
+            $this->canalPerfilCarregado = false;
+
+            return;
+        }
+
+        try {
+            $perfil = $provider->obterPerfil($canal->configuracao);
+
+            $this->canalNome = $perfil['nome'];
+            $this->canalDescricao = $perfil['descricao'];
+            $this->canalDescricaoCurta = $perfil['descricao_curta'];
+            $this->canalPerfilCarregado = true;
         } catch (\Throwable) {
-            $this->telegramPerfilCarregado = false;
-            session()->flash('error', 'Não foi possível carregar os dados atuais do bot no Telegram.');
+            $this->canalPerfilCarregado = false;
+            session()->flash('error', 'Não foi possível carregar os dados atuais do canal.');
         }
     }
 
-    public function atualizarPerfilTelegram(TelegramBotManager $manager): void
+    public function atualizarPerfilCanal(CanalConexaoProviderFactory $factory): void
     {
         abort_unless(auth()->user()->can('manage-chatbot'), 403);
 
         $this->validate([
-            'telegramNome' => 'required|string|max:64',
-            'telegramDescricao' => 'nullable|string|max:512',
-            'telegramDescricaoCurta' => 'nullable|string|max:120',
+            'canalNome' => 'required|string|max:64',
+            'canalDescricao' => 'nullable|string|max:512',
+            'canalDescricaoCurta' => 'nullable|string|max:120',
         ]);
 
+        $tipo = $this->canalAberto;
+        $provider = $tipo ? $factory->para($tipo) : null;
+        $canal = $tipo ? Canal::where('tipo', $tipo)->first() : null;
+
+        abort_if(! $provider || ! $canal?->configuracao, 404);
+
         try {
-            $manager->atualizarPerfil($this->agente->telegram_bot_token, [
-                'nome' => $this->telegramNome,
-                'descricao' => $this->telegramDescricao,
-                'descricao_curta' => $this->telegramDescricaoCurta,
+            $provider->atualizarPerfil($canal->configuracao, [
+                'nome' => $this->canalNome,
+                'descricao' => $this->canalDescricao,
+                'descricao_curta' => $this->canalDescricaoCurta,
             ]);
 
-            session()->flash('success', 'Perfil do bot atualizado no Telegram.');
+            session()->flash('success', 'Perfil do canal atualizado.');
         } catch (\Throwable) {
-            session()->flash('error', 'Falha ao atualizar o perfil do bot no Telegram.');
+            session()->flash('error', 'Falha ao atualizar o perfil do canal.');
         }
     }
 

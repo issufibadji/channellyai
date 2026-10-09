@@ -23,16 +23,14 @@ class Agente extends Model implements AuditableContract
     protected $fillable = [
         'estabelecimento_id', 'nome', 'template', 'group_folder', 'webhook_token',
         'agent_group_id', 'status_publicacao', 'publicado_em', 'ultimo_commit',
-        'telegram_bot_token', 'telegram_bot_username',
     ];
 
-    protected $auditExclude = ['webhook_token', 'telegram_bot_token'];
+    protected $auditExclude = ['webhook_token'];
 
     protected function casts(): array
     {
         return [
             'publicado_em' => 'datetime',
-            'telegram_bot_token' => 'encrypted',
         ];
     }
 

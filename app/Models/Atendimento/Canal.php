@@ -25,11 +25,14 @@ class Canal extends Model implements AuditableContract
 
     protected $fillable = ['estabelecimento_id', 'nome', 'tipo', 'ativo', 'configuracao'];
 
+    /** Tipos de canal com um provedor de conexão de bot implementado (ver App\Contracts\CanalConexaoProvider). */
+    public const TIPOS_COM_PROVIDER = ['telegram'];
+
     protected function casts(): array
     {
         return [
             'ativo' => 'boolean',
-            'configuracao' => 'array',
+            'configuracao' => 'encrypted:array',
         ];
     }
 
