@@ -131,13 +131,17 @@
 
                                                 @if ($agente->pareamento_status === 'success')
                                                     <x-badge variant="success">Pareado — agente já responde no Telegram</x-badge>
-                                                @elseif ($agente->pareamento_status === 'pending' && $agente->pareamento_codigo)
+                                                @elseif ($agente->pareamento_status === 'pending')
                                                     <div wire:poll.3s="verificarPareamento" class="space-y-2">
-                                                        <p class="text-xs text-text-secondary">
-                                                            Abra a conversa com o bot <span class="font-mono">{{ $status['identificador'] }}</span> no Telegram e mande este código:
-                                                        </p>
-                                                        <p class="text-2xl font-mono tracking-widest text-center bg-surface border border-surface-border rounded-md py-3">{{ $agente->pareamento_codigo }}</p>
-                                                        <p class="text-xs text-text-secondary">Aguardando confirmação...</p>
+                                                        @if ($agente->pareamento_codigo)
+                                                            <p class="text-xs text-text-secondary">
+                                                                Abra a conversa com o bot <span class="font-mono">{{ $status['identificador'] }}</span> no Telegram e mande este código:
+                                                            </p>
+                                                            <p class="text-2xl font-mono tracking-widest text-center bg-surface border border-surface-border rounded-md py-3">{{ $agente->pareamento_codigo }}</p>
+                                                            <p class="text-xs text-text-secondary">Aguardando confirmação...</p>
+                                                        @else
+                                                            <p class="text-xs text-text-secondary">Gerando código de pareamento...</p>
+                                                        @endif
                                                     </div>
                                                 @elseif ($agente->pareamento_status === 'failed')
                                                     <x-alert variant="error">Pareamento falhou. Tenta de novo.</x-alert>

@@ -398,6 +398,7 @@ class ChatbotManager extends Component
 
             $this->agente->update([
                 'pareamento_status' => $status['status'],
+                'pareamento_codigo' => $status['codigo'] ?: $this->agente->pareamento_codigo,
                 'pareado_em' => $status['status'] === 'success' ? now() : null,
             ]);
 

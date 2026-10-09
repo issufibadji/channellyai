@@ -423,4 +423,27 @@ class ChatbotManagerTest extends TestCase
         $this->assertSame('success', $agente->pareamento_status);
         $this->assertNotNull($agente->pareado_em);
     }
+
+    public function test_verificar_pareamento_preenche_o_codigo_quando_ele_chega_depois(): void
+    {
+        config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)->test(ChatbotManager::class);
+        Agente::first()->update([
+            'pareamento_pairing_id' => 'pairing-abc',
+            'pareamento_status' => 'pending',
+            'pareamento_codigo' => null,
+        ]);
+
+        Http::fake(['*' => Http::response(['ok' => true, 'status' => 'pending', 'code' => '969975', 'fields' => []])]);
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class)
+            ->call('verificarPareamento');
+
+        $this->assertSame('969975', Agente::first()->pareamento_codigo);
+    }
 }
