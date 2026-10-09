@@ -17,7 +17,11 @@ return new class extends Migration
             );
 
             $canal->update([
-                'configuracao' => ['token' => $agente->telegram_bot_token, 'username' => $agente->telegram_bot_username],
+                'configuracao' => [
+                    'token' => $agente->telegram_bot_token,
+                    'username' => $agente->telegram_bot_username,
+                    'identificador' => '@'.$agente->telegram_bot_username,
+                ],
             ]);
         });
 
