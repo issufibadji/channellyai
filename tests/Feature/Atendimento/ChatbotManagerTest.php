@@ -371,7 +371,13 @@ class ChatbotManagerTest extends TestCase
             ->call('save');
         $this->conectarCanalDeTeste();
 
-        Http::fake(function (Request $request) {
+        $instanciasRecebidas = [];
+
+        Http::fake(function (Request $request) use (&$instanciasRecebidas) {
+            if (str_contains($request->url(), 'telegram-token') || str_contains($request->url(), '/pair')) {
+                $instanciasRecebidas[] = $request->data()['instance'] ?? null;
+            }
+
             if (str_contains($request->url(), '/agent-groups') && ! str_contains($request->url(), 'telegram-token') && ! str_contains($request->url(), 'pair')) {
                 return Http::response(['ok' => true, 'output' => json_encode(['id' => 'ag-123'])]);
             }
@@ -393,6 +399,7 @@ class ChatbotManagerTest extends TestCase
 
         $agente = Agente::first();
         $this->assertSame('ag-123', $agente->agent_group_id);
+        $this->assertSame([$agente->group_folder, $agente->group_folder], $instanciasRecebidas);
         $this->assertSame('pairing-abc', $agente->pareamento_pairing_id);
         $this->assertSame('969975', $agente->pareamento_codigo);
         $this->assertSame('pending', $agente->pareamento_status);

@@ -365,12 +365,17 @@ class ChatbotManager extends Component
 
         abort_if($tipo !== 'telegram' || ! $canal?->configuracao, 404);
 
+        // Instância nomeada por estabelecimento — a VPS do NanoClaw é compartilhada entre
+        // todos os estabelecimentos, então usar sempre o slot padrão (TELEGRAM_BOT_TOKEN)
+        // faria o segundo estabelecimento colidir com o token do primeiro (ver doc/09).
+        $instance = $this->agente->group_folder;
+
         try {
             $grupo = $provisionador->criarAgentGroup($this->agente->group_folder, $this->nomeExibicao ?: $this->agente->nome);
 
-            $provisionador->gravarToken($this->agente->group_folder, (string) $canal->configuracao['token']);
+            $provisionador->gravarToken($this->agente->group_folder, (string) $canal->configuracao['token'], $instance);
 
-            $pareamento = $provisionador->iniciarPareamento($this->agente->group_folder);
+            $pareamento = $provisionador->iniciarPareamento($this->agente->group_folder, $instance);
 
             $this->agente->update([
                 'agent_group_id' => $grupo['id'] ?? $this->agente->agent_group_id,
