@@ -282,7 +282,8 @@ class ChatbotManager extends Component
             $this->carregarPerfilCanal($tipo);
 
             session()->flash('success', "{$resultado['identificador']} conectado com sucesso.");
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Falha ao conectar canal', ['tipo' => $tipo, 'erro' => $e->getMessage()]);
             session()->flash('error', 'Não foi possível conectar com essa credencial. Confira se foi copiada certo.');
         }
     }
