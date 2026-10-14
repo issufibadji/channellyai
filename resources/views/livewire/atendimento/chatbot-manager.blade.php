@@ -1,9 +1,11 @@
 <div>
-    <div class="flex items-center justify-between mb-2">
+    <a href="{{ route('atendimento.chatbot.index') }}" wire:navigate class="text-sm text-primary hover:underline">&larr; Agentes</a>
+
+    <div class="flex items-center justify-between mb-2 mt-2">
         <h1 class="text-2xl font-semibold text-text-primary">IA e Chatbot</h1>
     </div>
     <p class="text-sm text-text-secondary mb-6">
-        Dados do negócio usados pelo agente de IA deste estabelecimento. Pasta de publicação: <span class="font-mono">{{ $agente->group_folder }}</span>.
+        Dados do negócio usados por este agente de IA. Pasta de publicação: <span class="font-mono">{{ $agente->group_folder }}</span>.
     </p>
 
     @if (session('success'))

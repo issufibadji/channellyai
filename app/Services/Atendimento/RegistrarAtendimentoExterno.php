@@ -25,8 +25,8 @@ class RegistrarAtendimentoExterno
 
         $canalModel = Canal::withoutGlobalScope('estabelecimento')
             ->firstOrCreate(
-                ['estabelecimento_id' => $estabelecimentoId, 'tipo' => $canal],
-                ['nome' => ucfirst($canal).' (agente)', 'ativo' => true],
+                ['agente_id' => $agente->id, 'tipo' => $canal],
+                ['estabelecimento_id' => $estabelecimentoId, 'nome' => ucfirst($canal).' (agente)', 'ativo' => true],
             );
 
         $clienteModel = Cliente::withoutGlobalScope('estabelecimento')

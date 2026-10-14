@@ -18,68 +18,82 @@ class ChatbotManagerTest extends TestCase
 {
     use RefreshDatabase, WithEstabelecimentoAtual;
 
+    private \App\Models\Estabelecimento $estabelecimento;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
-        $this->definirEstabelecimentoAtual($this->criarEstabelecimento());
+        $this->estabelecimento = $this->criarEstabelecimento();
+        $this->definirEstabelecimentoAtual($this->estabelecimento);
+    }
+
+    private function criarAgente(): Agente
+    {
+        return Agente::create([
+            'estabelecimento_id' => $this->estabelecimento->id,
+            'nome' => 'Agente de Teste',
+        ]);
+    }
+
+    private function conectarCanalDeTeste(Agente $agente): void
+    {
+        Canal::create([
+            'agente_id' => $agente->id,
+            'nome' => 'Telegram (agente)',
+            'tipo' => 'telegram',
+            'ativo' => true,
+            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
+        ]);
     }
 
     public function test_user_without_manage_chatbot_gets_403(): void
     {
+        $agente = $this->criarAgente();
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get(route('atendimento.chatbot.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('atendimento.chatbot.show', $agente))->assertForbidden();
     }
 
-    public function test_admin_without_an_estabelecimento_selected_is_redirected_instead_of_crashing(): void
+    public function test_opening_another_estabelecimento_agente_gets_404(): void
     {
-        session()->forget('current_estabelecimento_id');
+        $outro = $this->criarEstabelecimento(['nome' => 'Outro', 'slug' => 'outro-estabelecimento']);
+        $agenteDeOutroEstabelecimento = Agente::create(['estabelecimento_id' => $outro->id, 'nome' => 'Agente de outro']);
 
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        $this->actingAs($admin)
-            ->get(route('atendimento.chatbot.index'))
-            ->assertRedirect(route('atendimento.dashboard'));
-
-        $this->assertSame(0, Agente::count());
-    }
-
-    public function test_opening_the_screen_creates_an_agente_for_the_current_estabelecimento(): void
-    {
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        Livewire::actingAs($admin)->test(ChatbotManager::class);
-
-        $this->assertSame(1, Agente::count());
-    }
-
-    public function test_screen_starts_in_edit_mode_when_theres_no_data_yet(): void
-    {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agenteDeOutroEstabelecimento])
+            ->assertStatus(404);
+    }
+
+    public function test_screen_starts_in_edit_mode_when_theres_no_data_yet(): void
+    {
+        $agente = $this->criarAgente();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->assertSet('editando', true);
     }
 
     public function test_screen_starts_in_view_mode_when_data_already_exists_and_editar_opens_the_form(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->call('save');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->assertSet('editando', false)
             ->assertSee('Barbearia do Zé')
             ->assertDontSee('wire:submit')
@@ -89,18 +103,19 @@ class ChatbotManagerTest extends TestCase
 
     public function test_admin_can_save_business_data_and_servicos(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('tomDeVoz', 'descontraído')
             ->set('antecedenciaMinima', '2 horas')
             ->set('servicos', [['id' => null, 'nome' => 'Corte', 'duracaoMinutos' => 30, 'preco' => '35.00']])
             ->call('save')
             ->assertHasNoErrors()
-            ->assertRedirect(route('atendimento.dashboard'));
+            ->assertRedirect(route('atendimento.chatbot.index'));
 
         $this->assertDatabaseHas('agente_dados_negocio', [
             'nome_exibicao' => 'Barbearia do Zé',
@@ -115,11 +130,12 @@ class ChatbotManagerTest extends TestCase
 
     public function test_removing_a_servico_deletes_it_on_save(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         $component = Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->set('servicos', [['id' => null, 'nome' => 'Corte', 'duracaoMinutos' => 30, 'preco' => '35.00']])
@@ -136,11 +152,12 @@ class ChatbotManagerTest extends TestCase
 
     public function test_removing_a_politica_and_saving_persists_the_removal(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         $component = Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia Delta')
             ->set('antecedenciaMinima', '2 horas')
             ->set('politicas', ['chega na hora'])
@@ -157,11 +174,12 @@ class ChatbotManagerTest extends TestCase
 
     public function test_invalid_servico_is_rejected(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->set('servicos', [['id' => null, 'nome' => '', 'duracaoMinutos' => 0, 'preco' => -1]])
@@ -171,11 +189,12 @@ class ChatbotManagerTest extends TestCase
 
     public function test_preview_button_shows_the_generated_markdown(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->call('visualizar')
@@ -199,18 +218,19 @@ class ChatbotManagerTest extends TestCase
             return Http::response(['commit' => ['sha' => 'abc123']], 201);
         });
 
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->call('save')
             ->call('publicar')
             ->assertSee('Agente publicado com sucesso.');
 
-        $this->assertSame('publicado', Agente::first()->status_publicacao);
+        $this->assertSame('publicado', $agente->fresh()->status_publicacao);
     }
 
     public function test_publicar_mostra_erro_quando_a_publicacao_falha(): void
@@ -223,18 +243,19 @@ class ChatbotManagerTest extends TestCase
 
         Http::fake(fn () => Http::response(['message' => 'Bad credentials'], 401));
 
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->call('save')
             ->call('publicar')
             ->assertSee('Falha ao publicar o agente.');
 
-        $this->assertSame('erro', Agente::first()->status_publicacao);
+        $this->assertSame('erro', $agente->fresh()->status_publicacao);
     }
 
     public function test_conectar_canal_telegram_com_token_valido(): void
@@ -249,11 +270,12 @@ class ChatbotManagerTest extends TestCase
             'api.telegram.org/botTOKEN-VALIDO/getMyShortDescription' => Http::response(['ok' => true, 'result' => ['short_description' => '']]),
         ]);
 
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('selecionarCanal', 'telegram')
             ->set('canalCredencialInput', 'TOKEN-VALIDO')
             ->call('conectarCanal')
@@ -262,7 +284,7 @@ class ChatbotManagerTest extends TestCase
 
         $this->assertSame(
             ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
-            Canal::where('tipo', 'telegram')->first()->configuracao,
+            Canal::where('agente_id', $agente->id)->where('tipo', 'telegram')->first()->configuracao,
         );
     }
 
@@ -270,26 +292,28 @@ class ChatbotManagerTest extends TestCase
     {
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => false, 'description' => 'Unauthorized'], 401)]);
 
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('selecionarCanal', 'telegram')
             ->set('canalCredencialInput', 'TOKEN-INVALIDO')
             ->call('conectarCanal')
             ->assertSee('Não foi possível conectar');
 
-        $this->assertNull(Canal::where('tipo', 'telegram')->first());
+        $this->assertNull(Canal::where('agente_id', $agente->id)->where('tipo', 'telegram')->first());
     }
 
     public function test_canal_ainda_nao_suportado_nao_pode_ser_conectado(): void
     {
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('selecionarCanal', 'whatsapp')
             ->call('conectarCanal')
             ->assertStatus(404);
@@ -297,16 +321,11 @@ class ChatbotManagerTest extends TestCase
 
     public function test_atualizar_perfil_do_canal_chama_a_api_do_telegram(): void
     {
+        $agente = $this->criarAgente();
+        $this->conectarCanalDeTeste($agente);
+
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-
-        Livewire::actingAs($admin)->test(ChatbotManager::class);
-        Canal::create([
-            'nome' => 'Telegram (agente)',
-            'tipo' => 'telegram',
-            'ativo' => true,
-            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
-        ]);
 
         Http::fake([
             'api.telegram.org/botTOKEN-VALIDO/getMyName' => Http::response(['ok' => true, 'result' => ['name' => 'Barbearia Piloto']]),
@@ -318,7 +337,7 @@ class ChatbotManagerTest extends TestCase
         ]);
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('selecionarCanal', 'telegram')
             ->set('canalNome', 'Novo Nome do Bot')
             ->call('atualizarPerfilCanal')
@@ -327,49 +346,35 @@ class ChatbotManagerTest extends TestCase
 
     public function test_desconectar_canal_remove_a_configuracao(): void
     {
+        $agente = $this->criarAgente();
+        $this->conectarCanalDeTeste($agente);
+
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        Livewire::actingAs($admin)->test(ChatbotManager::class);
-        Canal::create([
-            'nome' => 'Telegram (agente)',
-            'tipo' => 'telegram',
-            'ativo' => true,
-            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
-        ]);
-
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('selecionarCanal', 'telegram')
             ->call('desconectarCanal')
             ->assertSee('Canal desconectado do agente.');
 
-        $this->assertNull(Canal::where('tipo', 'telegram')->first()->configuracao);
-    }
-
-    private function conectarCanalDeTeste(): void
-    {
-        Canal::create([
-            'nome' => 'Telegram (agente)',
-            'tipo' => 'telegram',
-            'ativo' => true,
-            'configuracao' => ['token' => 'TOKEN-VALIDO', 'username' => 'barbearia_piloto_bot', 'identificador' => '@barbearia_piloto_bot'],
-        ]);
+        $this->assertNull(Canal::where('agente_id', $agente->id)->where('tipo', 'telegram')->first()->configuracao);
     }
 
     public function test_iniciar_provisionamento_cria_grupo_grava_token_e_inicia_pareamento(): void
     {
         config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
 
+        $agente = $this->criarAgente();
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->set('nomeExibicao', 'Barbearia do Zé')
             ->set('antecedenciaMinima', '2 horas')
             ->call('save');
-        $this->conectarCanalDeTeste();
+        $this->conectarCanalDeTeste($agente);
 
         $instanciasRecebidas = [];
 
@@ -392,12 +397,12 @@ class ChatbotManagerTest extends TestCase
         });
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('selecionarCanal', 'telegram')
             ->call('iniciarProvisionamento')
             ->assertSee('969975');
 
-        $agente = Agente::first();
+        $agente->refresh();
         $this->assertSame('ag-123', $agente->agent_group_id);
         $this->assertSame([$agente->group_folder, $agente->group_folder], $instanciasRecebidas);
         $this->assertSame('pairing-abc', $agente->pareamento_pairing_id);
@@ -409,24 +414,24 @@ class ChatbotManagerTest extends TestCase
     {
         config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
 
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        Livewire::actingAs($admin)->test(ChatbotManager::class);
-        Agente::first()->update([
+        $agente = $this->criarAgente();
+        $agente->update([
             'pareamento_pairing_id' => 'pairing-abc',
             'pareamento_status' => 'pending',
             'pareamento_codigo' => '969975',
         ]);
 
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
         Http::fake(['*' => Http::response(['ok' => true, 'status' => 'success', 'code' => '969975', 'fields' => []])]);
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('verificarPareamento')
             ->assertSee('Agente pareado com o NanoClaw');
 
-        $agente = Agente::first();
+        $agente->refresh();
         $this->assertSame('success', $agente->pareamento_status);
         $this->assertNotNull($agente->pareado_em);
     }
@@ -435,22 +440,22 @@ class ChatbotManagerTest extends TestCase
     {
         config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
 
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        Livewire::actingAs($admin)->test(ChatbotManager::class);
-        Agente::first()->update([
+        $agente = $this->criarAgente();
+        $agente->update([
             'pareamento_pairing_id' => 'pairing-abc',
             'pareamento_status' => 'pending',
             'pareamento_codigo' => null,
         ]);
 
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
         Http::fake(['*' => Http::response(['ok' => true, 'status' => 'pending', 'code' => '969975', 'fields' => []])]);
 
         Livewire::actingAs($admin)
-            ->test(ChatbotManager::class)
+            ->test(ChatbotManager::class, ['agente' => $agente])
             ->call('verificarPareamento');
 
-        $this->assertSame('969975', Agente::first()->pareamento_codigo);
+        $this->assertSame('969975', $agente->fresh()->pareamento_codigo);
     }
 }

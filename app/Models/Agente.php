@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Atendimento\Canal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -40,7 +41,16 @@ class Agente extends Model implements AuditableContract
     {
         static::creating(function (self $agente) {
             if (! $agente->group_folder) {
-                $agente->group_folder = $agente->estabelecimento?->slug ?? (string) Str::uuid();
+                $base = $agente->estabelecimento?->slug ?? (string) Str::uuid();
+                $candidato = $base;
+
+                // Mais de um Agente por estabelecimento usa a mesma base de slug —
+                // desambigua com um sufixo até achar um group_folder livre (coluna é única).
+                while (static::where('group_folder', $candidato)->exists()) {
+                    $candidato = $base.'-'.Str::lower(Str::random(5));
+                }
+
+                $agente->group_folder = $candidato;
             }
 
             if (! $agente->status_publicacao) {
@@ -76,5 +86,10 @@ class Agente extends Model implements AuditableContract
     public function servicos(): HasMany
     {
         return $this->hasMany(AgenteServico::class);
+    }
+
+    public function canais(): HasMany
+    {
+        return $this->hasMany(Canal::class);
     }
 }

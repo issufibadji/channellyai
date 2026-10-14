@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Atendimento\AgenteManager;
 use App\Livewire\Atendimento\AtendimentoDashboard;
 use App\Livewire\Atendimento\AtendimentoManager;
 use App\Livewire\Atendimento\AtendimentoShow;
@@ -26,8 +27,10 @@ Route::middleware(['auth', 'verified', 'check2fa'])->prefix('atendimento')->name
     Route::middleware(['checkPermission:manage-canais', 'setEstabelecimento'])
         ->get('canais', CanalManager::class)->name('canais.index');
 
-    Route::middleware(['checkPermission:manage-chatbot', 'setEstabelecimento'])
-        ->get('chatbot', ChatbotManager::class)->name('chatbot.index');
+    Route::middleware(['checkPermission:manage-chatbot', 'setEstabelecimento'])->group(function () {
+        Route::get('chatbot', AgenteManager::class)->name('chatbot.index');
+        Route::get('chatbot/{agente}', ChatbotManager::class)->name('chatbot.show');
+    });
 
     Route::middleware(['checkPermission:view-relatorios-atendimento', 'setEstabelecimento'])
         ->get('relatorios', Relatorios::class)->name('relatorios.index');

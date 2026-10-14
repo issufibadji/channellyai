@@ -62,23 +62,14 @@ class ChatbotManager extends Component
 
     public bool $canalPerfilCarregado = false;
 
-    public function mount(): void
+    public function mount(Agente $agente): void
     {
-        $estabelecimentoId = app(CurrentEstabelecimento::class)->id();
+        // A resolução do route-model-binding roda antes do middleware "setEstabelecimento"
+        // (prioridade fixa do Laravel) e o Agente não tem o scope de estabelecimento —
+        // esse é o único ponto que impede abrir o agente de outro estabelecimento.
+        abort_unless($agente->estabelecimento_id === app(CurrentEstabelecimento::class)->id(), 404);
 
-        if (! $estabelecimentoId) {
-            session()->flash('warning', 'Selecione um estabelecimento no topo da página antes de configurar o agente.');
-            $this->redirect(route('atendimento.dashboard'), navigate: false);
-
-            return;
-        }
-
-        $nomeEstabelecimento = app(CurrentEstabelecimento::class)->estabelecimento()?->nome ?? 'Agente';
-
-        $this->agente = Agente::firstOrCreate(
-            ['estabelecimento_id' => $estabelecimentoId],
-            ['nome' => $nomeEstabelecimento],
-        );
+        $this->agente = $agente;
 
         $this->carregarDados();
 
@@ -165,7 +156,7 @@ class ChatbotManager extends Component
 
         session()->flash('success', 'Dados do agente salvos com sucesso.');
 
-        $this->redirect(route('atendimento.dashboard'), navigate: false);
+        $this->redirect(route('atendimento.chatbot.index'), navigate: false);
     }
 
     public function visualizar(NegocioMarkdownGenerator $generator): void
@@ -225,9 +216,14 @@ class ChatbotManager extends Component
         session()->flash('success', 'Token do webhook regenerado. Atualize onde ele for usado.');
     }
 
+    private function canaisDoAgente()
+    {
+        return Canal::where('agente_id', $this->agente->id);
+    }
+
     private function atualizarStatusCanais(): void
     {
-        $canais = Canal::whereIn('tipo', Canal::TIPOS_COM_PROVIDER)->get()->keyBy('tipo');
+        $canais = $this->canaisDoAgente()->whereIn('tipo', Canal::TIPOS_COM_PROVIDER)->get()->keyBy('tipo');
 
         $this->canaisStatus = [];
 
@@ -270,7 +266,7 @@ class ChatbotManager extends Component
             $resultado = $provider->conectar(['token' => $this->canalCredencialInput]);
 
             $canal = Canal::firstOrCreate(
-                ['tipo' => $tipo],
+                ['agente_id' => $this->agente->id, 'tipo' => $tipo],
                 ['nome' => (Canal::TIPOS[$tipo] ?? $tipo).' (agente)', 'ativo' => true],
             );
 
@@ -295,7 +291,7 @@ class ChatbotManager extends Component
 
         $tipo = $this->canalAberto;
 
-        Canal::where('tipo', $tipo)->first()?->update(['configuracao' => null]);
+        $this->canaisDoAgente()->where('tipo', $tipo)->first()?->update(['configuracao' => null]);
 
         $this->canalPerfilCarregado = false;
         $this->atualizarStatusCanais();
@@ -306,7 +302,7 @@ class ChatbotManager extends Component
     private function carregarPerfilCanal(string $tipo): void
     {
         $provider = app(CanalConexaoProviderFactory::class)->para($tipo);
-        $canal = Canal::where('tipo', $tipo)->first();
+        $canal = $this->canaisDoAgente()->where('tipo', $tipo)->first();
 
         if (! $provider || ! $provider->suportaPerfil() || ! $canal?->configuracao) {
             $this->canalPerfilCarregado = false;
@@ -339,7 +335,7 @@ class ChatbotManager extends Component
 
         $tipo = $this->canalAberto;
         $provider = $tipo ? $factory->para($tipo) : null;
-        $canal = $tipo ? Canal::where('tipo', $tipo)->first() : null;
+        $canal = $tipo ? $this->canaisDoAgente()->where('tipo', $tipo)->first() : null;
 
         abort_if(! $provider || ! $canal?->configuracao, 404);
 
@@ -361,7 +357,7 @@ class ChatbotManager extends Component
         abort_unless(auth()->user()->can('manage-chatbot'), 403);
 
         $tipo = $this->canalAberto;
-        $canal = $tipo ? Canal::where('tipo', $tipo)->first() : null;
+        $canal = $tipo ? $this->canaisDoAgente()->where('tipo', $tipo)->first() : null;
 
         abort_if($tipo !== 'telegram' || ! $canal?->configuracao, 404);
 
