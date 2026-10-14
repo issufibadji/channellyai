@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="4XfzqNGobaO1c02jq8RinyOsyxjfZZnawfDXVSQPUdQ" />
+    <meta name="google-site-verification" content="7e0Im3r7IMPonFqlrCIA6WZMGLLa9YICto2l-NkS6hE" />
     <title>{{ $title ?? config_app('app_name', config('app.name')) }}</title>
 
     <script>

@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="vapid-key" content="{{ config('webpush.vapid.public_key') }}">
     <meta name="google-site-verification" content="4XfzqNGobaO1c02jq8RinyOsyxjfZZnawfDXVSQPUdQ" />
+    <meta name="google-site-verification" content="7e0Im3r7IMPonFqlrCIA6WZMGLLa9YICto2l-NkS6hE" />
     <title>{{ $title ?? config_app('app_name', config('app.name')) }}</title>
 
     <script>
