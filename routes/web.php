@@ -10,6 +10,10 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+Route::get('legal/barbearia-piloto-privacidade', function () {
+    return view('legal.barbearia-piloto-privacidade');
+})->name('legal.barbearia-piloto-privacidade');
+
 Route::middleware(['auth', 'verified', 'check2fa'])->group(function () {
     Route::get('dashboard', Dashboard::class)->name('dashboard');
     Route::get('notifications', NotificationList::class)->name('notifications.index');
