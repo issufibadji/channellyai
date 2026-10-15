@@ -458,4 +458,84 @@ class ChatbotManagerTest extends TestCase
 
         $this->assertSame('969975', $agente->fresh()->pareamento_codigo);
     }
+
+    public function test_verificar_pareamento_cria_o_wiring_na_primeira_vez_que_vira_sucesso(): void
+    {
+        config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
+
+        $agente = $this->criarAgente();
+        $agente->update([
+            'agent_group_id' => 'ag-123',
+            'pareamento_pairing_id' => 'pairing-abc',
+            'pareamento_status' => 'pending',
+            'pareamento_codigo' => '969975',
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $chamadasWiring = [];
+
+        Http::fake(function (Request $request) use (&$chamadasWiring, $agente) {
+            if (str_contains($request->url(), '/wiring')) {
+                $chamadasWiring[] = $request->data();
+
+                return Http::response(['ok' => true, 'output' => '']);
+            }
+
+            return Http::response([
+                'ok' => true,
+                'status' => 'success',
+                'code' => '969975',
+                'fields' => ['PLATFORM_ID' => 'telegram:5305430737', 'INSTANCE' => 'telegram-'.$agente->group_folder],
+            ]);
+        });
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class, ['agente' => $agente])
+            ->call('verificarPareamento');
+
+        $this->assertCount(1, $chamadasWiring);
+        $this->assertSame('ag-123', $chamadasWiring[0]['agent_group_id']);
+        $this->assertSame('telegram:5305430737', $chamadasWiring[0]['platform_id']);
+    }
+
+    public function test_verificar_pareamento_nao_repete_o_wiring_se_ja_estava_pareado(): void
+    {
+        config(['nanoclaw.control_url' => 'http://vps-teste:8766', 'nanoclaw.control_token' => 'token-de-teste']);
+
+        $agente = $this->criarAgente();
+        $agente->update([
+            'agent_group_id' => 'ag-123',
+            'pareamento_pairing_id' => 'pairing-abc',
+            'pareamento_status' => 'success',
+            'pareamento_codigo' => '969975',
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $chamadasWiring = [];
+
+        Http::fake(function (Request $request) use (&$chamadasWiring, $agente) {
+            if (str_contains($request->url(), '/wiring')) {
+                $chamadasWiring[] = $request->data();
+
+                return Http::response(['ok' => true, 'output' => '']);
+            }
+
+            return Http::response([
+                'ok' => true,
+                'status' => 'success',
+                'code' => '969975',
+                'fields' => ['PLATFORM_ID' => 'telegram:5305430737', 'INSTANCE' => 'telegram-'.$agente->group_folder],
+            ]);
+        });
+
+        Livewire::actingAs($admin)
+            ->test(ChatbotManager::class, ['agente' => $agente])
+            ->call('verificarPareamento');
+
+        $this->assertCount(0, $chamadasWiring);
+    }
 }

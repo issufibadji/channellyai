@@ -69,6 +69,21 @@ class NanoClawProvisionador
     }
 
     /**
+     * Liga o chat já pareado (identificado por `$platformId`, no formato que o
+     * próprio NanoClaw devolve em PLATFORM_ID — ex. "telegram:123456", com o
+     * prefixo do canal) ao agent group — sem isso, o pareamento sozinho não
+     * faz o bot responder nada (ver doc/09-automacao-bots-telegram.md).
+     */
+    public function criarWiring(string $folder, string $agentGroupId, string $platformId, string $instance): void
+    {
+        $this->chamar('post', "/agent-groups/{$folder}/wiring", [
+            'agent_group_id' => $agentGroupId,
+            'platform_id' => $platformId,
+            'instance' => $instance,
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */

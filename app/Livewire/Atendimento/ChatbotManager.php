@@ -394,6 +394,8 @@ class ChatbotManager extends Component
             return;
         }
 
+        $jaEstavaPareado = $this->agente->pareamento_status === 'success';
+
         try {
             $status = $provisionador->statusPareamento($this->agente->pareamento_pairing_id);
 
@@ -403,11 +405,38 @@ class ChatbotManager extends Component
                 'pareado_em' => $status['status'] === 'success' ? now() : null,
             ]);
 
-            if ($status['status'] === 'success') {
+            if ($status['status'] === 'success' && ! $jaEstavaPareado) {
+                $this->ligarChatAoAgente($provisionador, $status['campos']);
                 session()->flash('success', 'Agente pareado com o NanoClaw — já pode responder no Telegram.');
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Falha ao consultar status do pareamento', ['erro' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * O pareamento sozinho só prova posse do chat — sem ligar ("wiring") o chat
+     * ao agent group, o bot não responde nada (achado documentado em
+     * doc/09-automacao-bots-telegram.md). Falha aqui não desfaz o pareamento;
+     * só fica registrada no log pra investigar manualmente se acontecer.
+     *
+     * @param  array<string, mixed>  $campos
+     */
+    private function ligarChatAoAgente(NanoClawProvisionador $provisionador, array $campos): void
+    {
+        $platformId = $campos['PLATFORM_ID'] ?? null;
+        $instance = $campos['INSTANCE'] ?? $this->agente->group_folder;
+
+        if (! $platformId || ! $this->agente->agent_group_id) {
+            \Illuminate\Support\Facades\Log::error('Pareamento sem PLATFORM_ID ou agent_group_id — wiring não foi criado', ['agente_id' => $this->agente->id]);
+
+            return;
+        }
+
+        try {
+            $provisionador->criarWiring($this->agente->group_folder, $this->agente->agent_group_id, $platformId, $instance);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Falha ao criar o wiring do chat com o agente', ['erro' => $e->getMessage()]);
         }
     }
 
