@@ -425,7 +425,12 @@ class ChatbotManager extends Component
     private function ligarChatAoAgente(NanoClawProvisionador $provisionador, array $campos): void
     {
         $platformId = $campos['PLATFORM_ID'] ?? null;
-        $instance = $campos['INSTANCE'] ?? $this->agente->group_folder;
+        // O control server já adiciona o prefixo "telegram-" (mesma convenção de
+        // iniciarPareamento/gravarToken) — tira aqui se o NanoClaw já devolveu com ele,
+        // senão duplicava ("telegram-telegram-...").
+        $instance = isset($campos['INSTANCE'])
+            ? preg_replace('/^telegram-/', '', $campos['INSTANCE'])
+            : $this->agente->group_folder;
 
         if (! $platformId || ! $this->agente->agent_group_id) {
             \Illuminate\Support\Facades\Log::error('Pareamento sem PLATFORM_ID ou agent_group_id — wiring não foi criado', ['agente_id' => $this->agente->id]);
