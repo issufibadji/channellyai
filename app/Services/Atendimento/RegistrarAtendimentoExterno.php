@@ -23,10 +23,12 @@ class RegistrarAtendimentoExterno
     ): Atendimento {
         $estabelecimentoId = $agente->estabelecimento_id;
 
+        $nomeAgente = $agente->dadosNegocio?->nome_exibicao ?: $agente->nome;
+
         $canalModel = Canal::withoutGlobalScope('estabelecimento')
             ->firstOrCreate(
                 ['agente_id' => $agente->id, 'tipo' => $canal],
-                ['estabelecimento_id' => $estabelecimentoId, 'nome' => ucfirst($canal).' (agente)', 'ativo' => true],
+                ['estabelecimento_id' => $estabelecimentoId, 'nome' => ucfirst($canal).' — '.$nomeAgente, 'ativo' => true],
             );
 
         $clienteModel = Cliente::withoutGlobalScope('estabelecimento')

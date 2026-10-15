@@ -267,7 +267,7 @@ class ChatbotManager extends Component
 
             $canal = Canal::firstOrCreate(
                 ['agente_id' => $this->agente->id, 'tipo' => $tipo],
-                ['nome' => (Canal::TIPOS[$tipo] ?? $tipo).' (agente)', 'ativo' => true],
+                ['nome' => (Canal::TIPOS[$tipo] ?? $tipo).' — '.($this->agente->dadosNegocio?->nome_exibicao ?: $this->agente->nome), 'ativo' => true],
             );
 
             $canal->update([
