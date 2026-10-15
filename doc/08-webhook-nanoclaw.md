@@ -1,6 +1,6 @@
 # 08 — Webhook de entrada: NanoClaw → ChannellyAI
 
-Este documento descreve o endpoint pronto no ChannellyAI para **receber** conversas do NanoClaw. **O lado de enviar (dentro do motor NanoClaw) ainda não existe** — o código do motor vive em `github.com/nanocoai/nanoclaw`, fora deste repositório, e não há hoje nenhum webhook de saída lá. Este documento é o contrato que quem for implementar esse envio deve seguir.
+Este documento descreve o endpoint pronto no ChannellyAI para **receber** conversas do NanoClaw. O envio de verdade **não vem do motor NanoClaw em si** (ele não tem webhook de saída nativo) — vem de uma bridge própria, `channellyai-bridge.py`, rodando como serviço systemd na mesma VPS do NanoClaw, que faz polling das mailboxes SQLite de cada agent group e chama esse endpoint. Ver "Como funciona de verdade", mais abaixo.
 
 ---
 
@@ -60,7 +60,28 @@ Resposta de sucesso: `201 { "atendimento_id": <int> }`.
 
 Importante: como não há "estabelecimento atual" de sessão numa chamada de API, o service contorna explicitamente o global scope de `App\Concerns\BelongsToEstabelecimento` (`Model::withoutGlobalScope('estabelecimento')`) e define `estabelecimento_id` manualmente a partir do agente resolvido pelo token.
 
+## Como funciona de verdade
+
+`~/channellyai-bridge/bridge.py` (VPS, serviço `channellyai-bridge.service`, fora deste repositório) faz polling periódico das mailboxes SQLite de cada agent group (`~/nanoclaw/groups/<folder>/data/v2-sessions/.../outbound.db`) e chama este webhook pra cada mensagem nova, usando um arquivo de configuração próprio:
+
+```json
+// ~/channellyai-bridge/config.json
+{
+  "groups": {
+    "<agent_group_id>": {
+      "channellyai_url": "https://.../",
+      "webhook_token": "<webhook_token do Agente, copiado de 'IA e Chatbot'>",
+      "canais_validos": ["whatsapp", "telegram", "instagram", "facebook", "site", "email"]
+    }
+  }
+}
+```
+
+**Toda vez que um agente novo é criado e pareado** (ver `doc/09-automacao-bots-telegram.md`), é preciso adicionar a entrada dele aqui manualmente — isso **não está automatizado ainda** — e reiniciar o serviço (`systemctl --user restart channellyai-bridge.service`). Esquecer esse passo é indistinguível de "o agente está pareado mas nada aparece no ChannellyAI": o bot responde no Telegram normalmente, só não gera `Atendimento` nenhum.
+
+**Cuidado ao copiar o `webhook_token`**: a fonte monoespaçada do terminal confunde fácil `5`/`S`, `0`/`O` e `j`/`J` — um erro de transcrição aqui dá `401` silencioso na bridge (`journalctl --user -u channellyai-bridge.service`), sem nenhum aviso visível no Telegram nem no ChannellyAI. Prefira copiar o valor por seleção de texto (nunca digitar de olho), e, se desconfiar, comparar byte a byte (`ord(c)` em Python) em vez de olhar a string.
+
 ## O que falta para fechar a integração de verdade
 
-- Implementar, no motor NanoClaw (repositório externo, fora do alcance deste trabalho), o envio desse webhook ao final de cada conversa/atendimento, usando o token do agente correspondente.
-- Nenhum teste de integração ponta a ponta foi feito contra o motor real — só simulado via requisições de teste neste repositório e via `curl` manual contra o servidor de desenvolvimento.
+- Automatizar a adição de uma entrada nova em `config.json` da bridge quando um agente é pareado (hoje é manual — ver acima) — provavelmente um novo endpoint no control server (`doc/09`), espelhando o padrão já usado pros outros passos.
+- Nenhum teste automatizado cobre a bridge em si (ela vive fora deste repositório) — só testes manuais em produção.
