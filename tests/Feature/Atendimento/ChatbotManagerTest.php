@@ -475,12 +475,19 @@ class ChatbotManagerTest extends TestCase
         $admin->assignRole('admin');
 
         $chamadasWiring = [];
+        $chamadasBridge = [];
 
-        Http::fake(function (Request $request) use (&$chamadasWiring, $agente) {
+        Http::fake(function (Request $request) use (&$chamadasWiring, &$chamadasBridge, $agente) {
             if (str_contains($request->url(), '/wiring')) {
                 $chamadasWiring[] = $request->data();
 
                 return Http::response(['ok' => true, 'output' => '']);
+            }
+
+            if (str_contains($request->url(), '/bridge-config')) {
+                $chamadasBridge[] = $request->data();
+
+                return Http::response(['ok' => true]);
             }
 
             return Http::response([
@@ -498,6 +505,10 @@ class ChatbotManagerTest extends TestCase
         $this->assertCount(1, $chamadasWiring);
         $this->assertSame('ag-123', $chamadasWiring[0]['agent_group_id']);
         $this->assertSame('telegram:5305430737', $chamadasWiring[0]['platform_id']);
+
+        $this->assertCount(1, $chamadasBridge);
+        $this->assertSame('ag-123', $chamadasBridge[0]['agent_group_id']);
+        $this->assertSame($agente->webhook_token, $chamadasBridge[0]['webhook_token']);
     }
 
     public function test_verificar_pareamento_nao_repete_o_wiring_se_ja_estava_pareado(): void

@@ -84,6 +84,21 @@ class NanoClawProvisionador
     }
 
     /**
+     * Adiciona/atualiza a entrada desse agent group no config.json da bridge
+     * (channellyai-bridge.py) — sem isso, as mensagens do bot nunca viram
+     * Atendimento no ChannellyAI, mesmo com o pareamento/wiring certos e o bot
+     * respondendo normalmente (ver doc/08-webhook-nanoclaw.md).
+     */
+    public function configurarBridge(string $folder, string $agentGroupId, string $webhookToken): void
+    {
+        $this->chamar('post', "/agent-groups/{$folder}/bridge-config", [
+            'agent_group_id' => $agentGroupId,
+            'channellyai_url' => config('app.url'),
+            'webhook_token' => $webhookToken,
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */

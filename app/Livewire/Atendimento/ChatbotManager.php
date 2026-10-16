@@ -443,6 +443,12 @@ class ChatbotManager extends Component
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Falha ao criar o wiring do chat com o agente', ['erro' => $e->getMessage()]);
         }
+
+        try {
+            $provisionador->configurarBridge($this->agente->group_folder, $this->agente->agent_group_id, $this->agente->webhook_token);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Falha ao configurar a bridge para este agente', ['erro' => $e->getMessage()]);
+        }
     }
 
     public function render()
