@@ -112,6 +112,20 @@ No ChannellyAI: um novo `App\Services\Agente\TelegramBotProvisioner` (ou parecid
 
 ---
 
+## Limitação conhecida: todo cliente novo exige uma aprovação manual, uma vez
+
+Descoberto em 19/10/2026 testando com uma pessoa de verdade (não o dono do negócio) mandando a primeira mensagem pro bot da Ell Shaday: apareceu o mesmo cartão "New direct message... Choose existing agent / Connect new agent / Reject" que já tínhamos visto antes nos nossos próprios testes de pareamento.
+
+**Isso não é um bug nosso, nem específico desse bot** — é um comportamento fixo do adaptador do Telegram do NanoClaw (`src/channels/telegram.ts`: `dm: { ..., unknownSenderPolicy: 'request_approval' }`), hardcoded, sem flag de configuração por instância/agent group pra mudar isso de antemão. Não tem como "pré-aprovar" clientes futuros que ainda não mandaram mensagem nenhuma — o Telegram trata cada DM com o bot como um chat 1:1 próprio, e o NanoClaw só decide o que fazer com um chat novo na hora que a primeira mensagem chega.
+
+**Mas é só uma vez por pessoa, não por mensagem**: depois que o dono aprova um cliente (clicando "Choose existing agent" e escolhendo o agente certo), aquele chat fica wireado de vez — as próximas mensagens da mesma pessoa chegam direto no agente, sem pedir aprovação de novo. Então, na prática, o impacto é: toda vez que um cliente *novo* (nunca visto antes) manda a primeira mensagem, alguém com acesso ao Telegram do negócio precisa aprovar manualmente, uma vez, antes do bot responder a essa pessoa.
+
+**Instrução prática pra quem opera o negócio**: se esse cartão aparecer,
+- cliente de verdade → clicar **"Choose existing agent"** e escolher o agente certo (nunca "Connect new agent" — isso cria um agent group novo e solto, ver o achado de `140846` mais acima);
+- teste/sem interesse → clicar **"Reject"**.
+
+Não investigado ainda: se dá pra contornar isso com código não-interativo pré-escalado (ex.: escutar o evento de aprovação e auto-escolher o agente certo via `ncl approvals` ou similar), ou se precisaria de mudança no próprio NanoClaw (fora do alcance deste repositório).
+
 ## Dependências entre este plano e os outros documentos
 
 - Fecha a lacuna de `agent_group_id` descrita em `doc/07-multi-estabelecimento.md` ("Não implementado ainda").
